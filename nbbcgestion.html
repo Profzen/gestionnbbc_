@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Dashboard Achats & Ventes — NBBC Gestion</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#eaf2ff',
+              100: '#d7e6ff',
+              200: '#aaccff',
+              300: '#7db3ff',
+              400: '#4f99ff',
+              500: '#1a75ff',
+              600: '#145ed1',
+              700: '#104aa5',
+              800: '#0b3578',
+              900: '#071f4b'
+            },
+            accent: {
+              400: '#ffdf70',
+              500: '#ffd443',
+              600: '#f7c425'
+            },
+            ink: {
+              700: '#1f2937',
+              800: '#111827'
+            },
+            red: {
+              500: '#ef4444',
+              600: '#dc2626'
+            },
+            purple: {
+              500: '#8b5cf6',
+              600: '#7c3aed'
+            }
+          },
+          boxShadow: {
+            glow: '0 10px 30px rgba(26,117,255,0.20), 0 4px 14px rgba(0,0,0,0.08)',
+            glass: '0 10px 30px rgba(16, 74, 165, 0.18), inset 0 1px 0 rgba(255,255,255,0.25)',
+            soft: '0 12px 24px rgba(0,0,0,0.08)',
+            neon: '0 0 20px rgba(26,117,255,0.5), 0 0 40px rgba(255,212,67,0.3)'
+          },
+          fontFamily: {
+            sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', 'ui-sans-serif', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+            display: ['Space Grotesk', 'Inter', 'sans-serif']
+          },
+          keyframes: {
+            floaty: {
+              '0%,100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-10px)' }
+            },
+            sheen: {
+              '0%': { transform: 'translateX(-120%) rotate(10deg)' },
+              '100%': { transform: 'translateX(220%) rotate(10deg)' }
+            },
+            gradientShift: {
+              '0%': { backgroundPosition: '0% 50%' },
+              '50%': { backgroundPosition: '100% 50%' },
+              '100%': { backgroundPosition: '0% 50%' }
+            },
+            pulseGlow: {
+              '0%, 100%': { boxShadow: '0 0 10px rgba(26,117,255,0.3)' },
+              '50%': { boxShadow: '0 0 20px rgba(26,117,255,0.6)' }
+            }
+          },
+          animation: {
+            floaty: 'floaty 6s ease-in-out infinite',
+            sheen: 'sheen 8s linear infinite',
+            gradientShift: 'gradientShift 30s ease infinite',
+            pulseGlow: 'pulseGlow 3s ease-in-out infinite'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .bg-figma {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background:
+        radial-gradient(1100px 600px at -10% -10%, rgba(26,117,255,0.18), transparent 60%),
+        radial-gradient(900px 500px at 110% 0%, rgba(255,212,67,0.22), transparent 58%),
+        radial-gradient(800px 500px at 85% 110%, rgba(26,117,255,0.14), transparent 55%);
+    }
+    .bg-figma::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(16,74,165,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16,74,165,0.08) 1px, transparent 1px);
+      background-size: 44px 44px, 44px 44px;
+      mask-image:
+        radial-gradient(60% 60% at 20% 10%, rgba(0,0,0,.45), transparent 70%),
+        radial-gradient(55% 55% at 80% 20%, rgba(0,0,0,.35), transparent 72%),
+        radial-gradient(60% 60% at 50% 90%, rgba(0,0,0,.35), transparent 70%);
+      pointer-events: none;
+    }
+    .beam {
+      position: absolute;
+      filter: blur(40px);
+      opacity: .45;
+      mix-blend-mode: multiply;
+      background: conic-gradient(from 90deg at 50% 50%, rgba(26,117,255,.35), rgba(255,212,67,.45), rgba(26,117,255,.35));
+      animation: gradientShift 30s linear infinite;
+    }
+    .beam.one { width: 420px; height: 420px; top: 8%; left: 12%; border-radius: 50%; }
+    .beam.two { width: 520px; height: 520px; bottom: 10%; right: 8%; border-radius: 50%; }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.88));
+      border: 1px solid rgba(16,24,40,0.08);
+      border-radius: 20px;
+      box-shadow: var(--shadow, 0 10px 30px rgba(0,0,0,0.06));
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .card::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -120%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent);
+      opacity: 0.35;
+      animation: sheen 8s ease-in-out infinite;
+    }
+    .glow-ring {
+      position: relative;
+    }
+    .glow-ring::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: 14px;
+      background: radial-gradient(120px 40px at 10% 10%, rgba(26,117,255,0.35), transparent 60%),
+                  radial-gradient(120px 40px at 90% 90%, rgba(255,212,67,0.35), transparent 60%);
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    .glow-ring:hover::before,
+    .glow-ring.active::before { opacity: 1; box-shadow: 0 0 15px rgba(26,117,255,0.4); }
+
+    .no-blur { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+
+    .nav-active {
+      background: linear-gradient(90deg, rgba(26,117,255,0.12), rgba(26,117,255,0.06));
+      color: #104aa5 !important;
+      box-shadow: 0 6px 18px rgba(26,117,255,0.15) inset;
+      border: 1px solid rgba(26,117,255,0.20);
+      animation: pulseGlow 3s ease-in-out infinite;
+    }
+
+    .row-even { background: linear-gradient(0deg, #ffffff, #ffffff); }
+    .row-odd  { background: linear-gradient(0deg, #fbfdff, #fbfdff); }
+
+    .bar { transition: height 0.5s ease; }
+    .chart-label { font-size: 12px; fill: #1f2937; }
+  </style>
+</head>
+<body class="font-sans text-ink-800 antialiased">
+  <div class="bg-figma"></div>
+  <div class="beam one"></div>
+  <div class="beam two"></div>
+
+  <div class="min-h-screen flex">
+    <aside id="sidebar" class="w-[300px] shrink-0 fixed sm:static inset-y-0 -left-[320px] sm:left-0 transition-all duration-300 z-40">
+      <div class="h-full flex flex-col">
+        <div class="px-6 pt-6">
+          <div class="card" style="--shadow: 0 10px 30px rgba(26,117,255,0.12), 0 4px 14px rgba(0,0,0,0.06)">
+            <div class="p-5 flex items-center gap-3">
+              <!-- Logo updated: now expects nbbc.jpg in same folder as this file -->
+              <img src="nbbc.PNG" alt="logo" style="width: 70px; height: auto;">
+              <div>
+                <div class="font-display text-xl font-bold tracking-tight text-primary-800">NBBC Gestion</div>
+                <div class="text-xs text-ink-700/60">New Boss Business Center</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <nav class="p-4 flex-1 overflow-y-auto">
+          <ul class="space-y-2">
+            <li>
+              <button data-target="dashboard" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent">
+                <span class="h-9 w-9 rounded-lg bg-primary-500/10 text-primary-600 flex items-center justify-center shadow-glow">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 13h8V3H3v10Zm10 8h8V3h-8v18ZM3 21h8v-6H3v6Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+                <span class="font-semibold">Dashboard Central</span>
+              </button>
+            </li>
+            <li>
+              <button data-target="achats" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent">
+                <span class="h-9 w-9 rounded-lg bg-accent-500/15 text-ink-800 flex items-center justify-center shadow-glow">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 6h12l-1 12H7L6 6Zm2 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+                <span class="font-semibold">Gestion Achats</span>
+              </button>
+            </li>
+            <li>
+              <button data-target="ventes" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent">
+                <span class="h-9 w-9 rounded-lg bg-primary-500/12 text-primary-600 flex items-center justify-center shadow-glow">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 15l4 4 12-12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+                <span class="font-semibold">Gestion Ventes</span>
+              </button>
+            </li>
+            <li>
+              <button data-target="depenses" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent">
+                <span class="h-9 w-9 rounded-lg bg-red-500/10 text-red-600 flex items-center justify-center shadow-glow">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 5v14m-7-7l7 7 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+                <span class="font-semibold">Gestion Dépenses</span>
+              </button>
+            </li>
+            <li>
+              <button data-target="dettes" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent">
+                <span class="h-9 w-9 rounded-lg bg-purple-500/10 text-purple-600 flex items-center justify-center shadow-glow">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+                <span class="font-semibold">Gestion Dettes</span>
+              </button>
+            </li>
+          </ul>
+
+          <div class="mt-8 pt-6">
+            <div class="grid grid-cols-2 gap-3">
+              <button id="quickAddAchat" class="glow-ring active rounded-xl px-3 py-2.5 bg-white text-primary-700 border border-primary-200 font-semibold shadow-neon hover:shadow-soft transition animation-pulseGlow">+ Nouvel Achat</button>
+              <button id="quickAddVente" class="glow-ring rounded-xl px-3 py-2.5 bg-gradient-to-br from-accent-500 to-yellow-300 text-ink-800 font-extrabold shadow-neon hover:brightness-105 transition animation-pulseGlow">+ Nouvelle Vente</button>
+              <button id="quickAddDepense" class="glow-ring active rounded-xl px-3 py-2.5 bg-white text-red-700 border border-red-200 font-semibold shadow-neon hover:shadow-soft transition animation-pulseGlow">+ Nouvelle Dépense</button>
+              <button id="quickAddDette" class="glow-ring rounded-xl px-3 py-2.5 bg-gradient-to-br from-purple-500 to-purple-300 text-ink-800 font-extrabold shadow-neon hover:brightness-105 transition animation-pulseGlow">+ Nouvelle Dette</button>
+            </div>
+          </div>
+        </nav>
+
+        <div class="px-6 pb-6">
+          <div class="card">
+            <div class="p-4 text-xs text-ink-700/70">© 2025 — NBBC Solution</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="flex-1 min-w-0 sm:ml-0">
+      <header class="no-blur sticky top-0 z-30">
+        <div class="px-4 sm:px-6">
+          <div class="mt-4 card">
+            <div class="px-4 sm:px-6 h-16 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <button id="openSidebar" class="sm:hidden inline-flex items-center justify-center h-10 w-10 rounded-lg bg-white border border-primary-100 text-ink-700 hover:bg-primary-50/50">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </button>
+                <h1 id="pageTitle" class="font-display text-xl sm:text-2xl font-bold text-ink-800">Dashboard</h1>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section class="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+        <div id="dashboardSection" class="section">
+          <div class="grid lg:grid-cols-4 sm:grid-cols-2 grid-cols-1 gap-5">
+            <div class="card animation-pulseGlow">
+              <div class="p-5">
+                <div class="flex items-center justify-between">
+                  <div class="text-ink-700/70 text-sm">Chiffre d’affaires</div>
+                  <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-500/10 text-primary-600 shadow-glow">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 14l4 4 12-12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </div>
+                <div class="mt-3 font-display text-2xl font-bold text-ink-800" id="kpiCA">—</div>
+                <div class="mt-2 text-xs text-ink-700/60" id="kpiCAInfo">Basé sur ventes - achats | Taux de croissance: —</div>
+              </div>
+            </div>
+
+            <div class="card animation-pulseGlow">
+              <div class="p-5">
+                <div class="flex items-center justify-between">
+                  <div class="text-ink-700/70 text-sm">Total Achats</div>
+                  <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-accent-500/15 text-ink-800 shadow-glow">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M6 6h12l-1 12H7L6 6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </div>
+                <div class="mt-3 font-display text-2xl font-bold text-ink-800" id="kpiAchats">—</div>
+                <div class="mt-2 text-xs text-ink-700/60">Coûts cumulés | Moyenne par achat: —</div>
+              </div>
+            </div>
+
+            <div class="card animation-pulseGlow">
+              <div class="p-5">
+                <div class="flex items-center justify-between">
+                  <div class="text-ink-700/70 text-sm">Total Ventes</div>
+                  <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-500/12 text-primary-600 shadow-glow">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 15l4 4 12-12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </div>
+                <div class="mt-3 font-display text-2xl font-bold text-ink-800" id="kpiVentes">—</div>
+                <div class="mt-2 text-xs text-ink-700/60">Revenus cumulés | Moyenne par vente: —</div>
+              </div>
+            </div>
+
+            <div class="card animation-pulseGlow">
+              <div class="p-5">
+                <div class="flex items-center justify-between">
+                  <div class="text-ink-700/70 text-sm">Bénéfice Net</div>
+                  <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-green-500/10 text-green-600 shadow-glow">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 3v18M12 3l-4 4m4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </div>
+                <div class="mt-3 font-display text-2xl font-bold text-ink-800" id="kpiBenefice">—</div>
+                <div class="mt-2 text-xs text-ink-700/60" id="kpiBeneficeInfo">Ventes - Achats | Marge: —</div>
+              </div>
+            </div>
+            <div class="card animation-pulseGlow">
+              <div class="p-5">
+                <div class="flex items-center justify-between">
+                  <div class="text-ink-700/70 text-sm">Total Dépenses</div>
+                  <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/10 text-red-600 shadow-glow">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 5v14m-7-7l7 7 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </div>
+                <div class="mt-3 font-display text-2xl font-bold text-ink-800" id="kpiDepenses">—</div>
+                <div class="mt-2 text-xs text-ink-700/60">Dépenses cumulées | Moyenne par dépense: —</div>
+              </div>
+            </div>
+            <div class="card animation-pulseGlow">
+              <div class="p-5">
+                <div class="flex items-center justify-between">
+                  <div class="text-ink-700/70 text-sm">Total Dettes</div>
+                  <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600 shadow-glow">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </div>
+                <div class="mt-3 font-display text-2xl font-bold text-ink-800" id="kpiDettes">—</div>
+                <div class="mt-2 text-xs text-ink-700/60">Dettes cumulées | Moyenne par dette: —</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mt-6">
+            <div class="p-5">
+              <h3 class="font-semibold text-ink-800 mb-4">Évolution Mensuelle (Achats, Dépenses vs Ventes, Dettes)</h3>
+              <svg id="monthlyChart" width="100%" height="300" viewBox="0 0 800 300"></svg>
+              <div class="mt-4 text-xs text-ink-700/60">Données basées sur les enregistrements. Bleu: Achats, Rouge: Dépenses, Jaune: Ventes, Violet: Dettes.</div>
+            </div>
+          </div>
+
+          <div class="grid lg:grid-cols-2 gap-6 mt-6">
+            <div class="card">
+              <div class="p-5 flex items-center justify-between">
+                <h3 class="font-semibold text-ink-800">Derniers Achats (Top 5)</h3>
+                <button data-target="achats" class="nav-link text-primary-700 hover:underline text-sm font-medium">Voir la liste complète</button>
+              </div>
+              <div class="px-5 pb-5">
+                <ul id="recentAchats" class="space-y-3"></ul>
+              </div>
+            </div>
+            <div class="card">
+              <div class="p-5 flex items-center justify-between">
+                <h3 class="font-semibold text-ink-800">Dernières Ventes (Top 5)</h3>
+                <button data-target="ventes" class="nav-link text-primary-700 hover:underline text-sm font-medium">Voir la liste complète</button>
+              </div>
+              <div class="px-5 pb-5">
+                <ul id="recentVentes" class="space-y-3"></ul>
+              </div>
+            </div>
+          </div>
+          <div class="grid lg:grid-cols-2 gap-6 mt-6">
+            <div class="card">
+              <div class="p-5 flex items-center justify-between">
+                <h3 class="font-semibold text-ink-800">Dernières Dépenses (Top 5)</h3>
+                <button data-target="depenses" class="nav-link text-primary-700 hover:underline text-sm font-medium">Voir la liste complète</button>
+              </div>
+              <div class="px-5 pb-5">
+                <ul id="recentDepenses" class="space-y-3"></ul>
+              </div>
+            </div>
+            <div class="card">
+              <div class="p-5 flex items-center justify-between">
+                <h3 class="font-semibold text-ink-800">Dernières Dettes (Top 5)</h3>
+                <button data-target="dettes" class="nav-link text-primary-700 hover:underline text-sm font-medium">Voir la liste complète</button>
+              </div>
+              <div class="px-5 pb-5">
+                <ul id="recentDettes" class="space-y-3"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="achatsSection" class="section hidden">
+          <div class="card">
+            <div class="p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-4 md:justify-between">
+              <div class="flex items-center gap-3">
+                <div class="text-lg font-semibold text-ink-800">Achats Enregistrés</div>
+                <span class="text-xs text-ink-700/60 hidden sm:inline" id="achatCount">—</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center gap-2 bg-white border border-primary-100 rounded-xl px-3 py-2 glow-ring">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="text-ink-700/60">
+                    <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/>
+                    <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                  </svg>
+                  <input id="searchAchats" type="text" placeholder="Rechercher un achat (article, fournisseur, date)..." class="outline-none text-sm placeholder-ink-700/50 w-48 md:w-64">
+                </div>
+                <button id="addAchat" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold px-4 py-2.5 shadow-neon hover:brightness-105 transition glow-ring">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Ajouter Achat
+                </button>
+                <button id="deleteSelectedAchats" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 font-semibold px-4 py-2.5 hover:bg-primary-50/50 transition disabled:opacity-50 glow-ring" disabled>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 7h16M9 7v12m6-12v12M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7l1-2h4l1 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Supprimer Sélectionnés
+                </button>
+                <button id="exportAchats" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 px-4 py-2.5 hover:bg-primary-50/50 transition glow-ring">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 14v4h16v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 4v10M8 10l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Exporter PDF Achats
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead class="bg-primary-50 text-ink-700/80">
+                  <tr>
+                    <th class="px-4 py-3 text-left"><input id="selectAllAchats" type="checkbox" class="h-4 w-4 rounded border-primary-200"></th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="date">Date <span class="text-xs">▼</span></th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="item">Article</th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="qty">Quantité</th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="price">Prix Unitaire (FCFA)</th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="party">Fournisseur</th>
+                    <th class="px-4 py-3 text-right cursor-pointer" data-sort="total">Total (FCFA)</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="achatBody" class="divide-y divide-primary-50 bg-white"></tbody>
+                <tfoot>
+                  <tr class="bg-primary-50">
+                    <td colspan="6" class="px-4 py-3 text-right font-semibold">Total Achats</td>
+                    <td class="px-4 py-3 text-right font-bold" id="totalAchats">—</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="ventesSection" class="section hidden">
+          <div class="card">
+            <div class="p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-4 md:justify-between">
+              <div class="flex items-center gap-3">
+                <div class="text-lg font-semibold text-ink-800">Ventes Enregistrées</div>
+                <span class="text-xs text-ink-700/60 hidden sm:inline" id="venteCount">—</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center gap-2 bg-white border border-primary-100 rounded-xl px-3 py-2 glow-ring">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="text-ink-700/60">
+                    <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/>
+                    <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                  </svg>
+                  <input id="searchVentes" type="text" placeholder="Rechercher une vente (article, client, date)..." class="outline-none text-sm placeholder-ink-700/50 w-48 md:w-64">
+                </div>
+                <button id="addVente" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold px-4 py-2.5 shadow-neon hover:brightness-105 transition glow-ring">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Ajouter Vente
+                </button>
+                <button id="deleteSelectedVentes" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 font-semibold px-4 py-2.5 hover:bg-primary-50/50 transition disabled:opacity-50 glow-ring" disabled>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 7h16M9 7v12m6-12v12M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7l1-2h4l1 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Supprimer Sélectionnés
+                </button>
+                <button id="exportVentes" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 px-4 py-2.5 hover:bg-primary-50/50 transition glow-ring">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 14v4h16v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 4v10M8 10l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Exporter PDF Ventes
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead class="bg-primary-50 text-ink-700/80">
+                  <tr>
+                    <th class="px-4 py-3 text-left"><input id="selectAllVentes" type="checkbox" class="h-4 w-4 rounded border-primary-200"></th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="date">Date <span class="text-xs">▼</span></th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="item">Article</th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="qty">Quantité</th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="price">Prix Unitaire (FCFA)</th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="party">Client</th>
+                    <th class="px-4 py-3 text-right cursor-pointer" data-sort="total">Total (FCFA)</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="venteBody" class="divide-y divide-primary-50 bg-white"></tbody>
+                <tfoot>
+                  <tr class="bg-primary-50">
+                    <td colspan="6" class="px-4 py-3 text-right font-semibold">Total Ventes</td>
+                    <td class="px-4 py-3 text-right font-bold" id="totalVentes">—</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div id="depensesSection" class="section hidden">
+          <div class="card">
+            <div class="p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-4 md:justify-between">
+              <div class="flex items-center gap-3">
+                <div class="text-lg font-semibold text-ink-800">Dépenses Enregistrées</div>
+                <span class="text-xs text-ink-700/60 hidden sm:inline" id="depenseCount">—</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center gap-2 bg-white border border-primary-100 rounded-xl px-3 py-2 glow-ring">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="text-ink-700/60">
+                    <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/>
+                    <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                  </svg>
+                  <input id="searchDepenses" type="text" placeholder="Rechercher une dépense (description, bénéficiaire, date)..." class="outline-none text-sm placeholder-ink-700/50 w-48 md:w-64">
+                </div>
+                <button id="addDepense" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold px-4 py-2.5 shadow-neon hover:brightness-105 transition glow-ring">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Ajouter Dépense
+                </button>
+                <button id="deleteSelectedDepenses" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 font-semibold px-4 py-2.5 hover:bg-primary-50/50 transition disabled:opacity-50 glow-ring" disabled>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 7h16M9 7v12m6-12v12M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7l1-2h4l1 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Supprimer Sélectionnés
+                </button>
+                <button id="exportDepenses" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 px-4 py-2.5 hover:bg-primary-50/50 transition glow-ring">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 14v4h16v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 4v10M8 10l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Exporter PDF Dépenses
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead class="bg-primary-50 text-ink-700/80">
+                  <tr>
+                    <th class="px-4 py-3 text-left"><input id="selectAllDepenses" type="checkbox" class="h-4 w-4 rounded border-primary-200"></th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="date">Date <span class="text-xs">▼</span></th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="item">Description</th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="qty">Quantité</th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="price">Prix Unitaire (FCFA)</th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="party">Bénéficiaire</th>
+                    <th class="px-4 py-3 text-right cursor-pointer" data-sort="total">Total (FCFA)</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="depenseBody" class="divide-y divide-primary-50 bg-white"></tbody>
+                <tfoot>
+                  <tr class="bg-primary-50">
+                    <td colspan="6" class="px-4 py-3 text-right font-semibold">Total Dépenses</td>
+                    <td class="px-4 py-3 text-right font-bold" id="totalDepenses">—</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div id="dettesSection" class="section hidden">
+          <div class="card">
+            <div class="p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-4 md:justify-between">
+              <div class="flex items-center gap-3">
+                <div class="text-lg font-semibold text-ink-800">Dettes Enregistrées</div>
+                <span class="text-xs text-ink-700/60 hidden sm:inline" id="detteCount">—</span>
+              </div>
+              <div class="flex flex-wrap items-centered gap-2">
+                <div class="flex items-center gap-2 bg-white border border-primary-100 rounded-xl px-3 py-2 glow-ring">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="text-ink-700/60">
+                    <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/>
+                    <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                  </svg>
+                  <input id="searchDettes" type="text" placeholder="Rechercher une dette (description, créancier, date)..." class="outline-none text-sm placeholder-ink-700/50 w-48 md:w-64">
+                </div>
+                <button id="addDette" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 text-white font-semibold px-4 py-2.5 shadow-neon hover:brightness-105 transition glow-ring">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  Ajouter Dette
+                </button>
+                <button id="deleteSelectedDettes" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 font-semibold px-4 py-2.5 hover:bg-primary-50/50 transition disabled:opacity-50 glow-ring" disabled>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 7h16M9 7v12m6-12v12M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7l1-2h4l1 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Supprimer Sélectionnés
+                </button>
+                <button id="exportDettes" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 px-4 py-2.5 hover:bg-primary-50/50 transition glow-ring">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 14v4h16v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 4v10M8 10l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Exporter PDF Dettes
+                </button>
+              </div> 
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead class="bg-primary-50 text-ink-700/80">
+                  <tr>
+                    <th class="px-4 py-3 text-left"><input id="selectAllDettes" type="checkbox" class="h-4 w-4 rounded border-primary-200"></th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="date">Date <span class="text-xs">▼</span></th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="item">Description</th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="qty">Quantité</th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="price">Prix Unitaire (FCFA)</th>
+                    <th class="px-4 py-3 text-left cursor-pointer" data-sort="party">Créancier</th>
+                    <th class="px-4 py-3 text-right cursor-pointer" data-sort="total">Total (FCFA)</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="detteBody" class="divide-y divide-primary-50 bg-white"></tbody>
+                <tfoot>
+                  <tr class="bg-primary-50">
+                    <td colspan="6" class="px-4 py-3 text-right font-semibold">Total Dettes</td>
+                    <td class="px-4 py-3 text-right font-bold" id="totalDettes">—</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="modalOverlay" class="fixed inset-0 z-50 hidden">
+      <div class="absolute inset-0 bg-ink-800/50"></div>
+      <div class="relative max-w-lg mx-auto mt-16 sm:mt-24">
+        <div class="card">
+          <div class="px-6 py-4 flex items-center justify-between border-b border-primary-100">
+            <h3 id="modalTitle" class="font-semibold text-ink-800">Nouvel enregistrement</h3>
+            <button id="closeModal" class="h-9 w-9 rounded-lg bg-white border border-primary-100 text-ink-800 hover:bg-primary-50/50">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="inline">
+                <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <form id="entryForm" class="p-6 space-y-4">
+            <input type="hidden" id="f_id">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="text-sm text-ink-700/70">Date</label>
+                <input required type="date" id="f_date" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-200 bg-white">
+              </div>
+              <div>
+                <label id="f_item_label" class="text-sm text-ink-700/70">Article</label>
+                <input required type="text" id="f_item" placeholder="Nom de l’article (ex: Ordinateur Portable)" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-200 bg-white">
+              </div>
+              <div>
+                <label class="text-sm text-ink-700/70">Quantité</label>
+                <input required min="1" type="number" id="f_qty" placeholder="1 ou plus" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-200 bg-white">
+              </div>
+              <div>
+                <label class="text-sm text-ink-700/70">Prix Unitaire (FCFA)</label>
+                <input required min="0" step="0.01" type="number" id="f_price" placeholder="0,00 (ex: 599.99)" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-200 bg-white">
+              </div>
+              <div class="sm:col-span-2">
+                <label id="f_party_label" class="text-sm text-ink-700/70">Fournisseur / Client</label>
+                <input required type="text" id="f_party" placeholder="Nom (ex: TechSupplier Inc.)" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-200 bg-white">
+              </div>
+              <div class="sm:col-span-2">
+                <label class="text-sm text-ink-700/70">Note (optionnelle)</label>
+                <textarea id="f_note" rows="3" placeholder="Détails supplémentaires, référence, conditions spéciales, etc." class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-200 bg-white"></textarea>
+              </div>
+            </div>
+
+            <div id="formError" class="hidden text-sm text-red-600">Veuillez remplir tous les champs obligatoires avec des valeurs valides. Assurez-vous que la quantité est positive et le prix est non négatif.</div>
+
+            <div class="pt-2 flex items-center justify-end gap-3">
+              <button type="button" id="cancelForm" class="px-4 py-2 rounded-xl border border-primary-100 text-ink-800 hover:bg-primary-50/50">Annuler</button>
+              <button type="submit" class="px-4 py-2 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold shadow-glow hover:brightness-105">Enregistrer</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div id="confirmOverlay" class="fixed inset-0 z-50 hidden">
+      <div class="absolute inset-0 bg-ink-800/50"></div>
+      <div class="relative max-w-md mx-auto mt-20">
+        <div class="card">
+          <div class="px-6 py-5 border-b border-primary-100">
+            <h3 class="font-semibold text-ink-800">Confirmer l'Action</h3>
+          </div>
+          <div class="px-6 py-4 text-ink-800" id="confirmText">
+            Voulez-vous vraiment supprimer les éléments sélectionnés ? Cette action est irréversible et affectera vos KPIs.
+          </div>
+          <div class="px-6 py-4 flex items-center justify-end gap-3">
+            <button id="confirmCancel" class="px-4 py-2 rounded-xl border border-primary-100 text-ink-800 hover:bg-primary-50/50">Annuler</button>
+            <button id="confirmOk" class="px-4 py-2 rounded-xl bg-red-500 text-white font-semibold hover:brightness-105">Confirmer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---------------------------
+    // State
+    // ---------------------------
+    let activeSection = 'dashboard';
+    let formContext = 'achat';
+    let editId = null;
+    let records = []; // array of { id, record_type, date, item, qty, price, party, note }
+
+    const STORAGE_KEY = 'nbbc_records_v1';
+
+    // ---------------------------
+    // Helpers
+    // ---------------------------
+    const el = (sel) => document.querySelector(sel);
+    const els = (sel) => Array.from(document.querySelectorAll(sel));
+    const money = (n) => Number(n || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' FCFA';
+
+    function debounce(fn, delay) {
+      let timeout;
+      return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn(...args), delay);
+      };
+    }
+
+    // ---------------------------
+    // Local Storage: load / save
+    // ---------------------------
+    function loadFromLocal() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          records = [];
+          return;
+        }
+        records = JSON.parse(raw) || [];
+        // Ensure numeric ids if they were saved as strings
+        records = records.map(r => ({ ...r, id: Number(r.id) }));
+        console.log('Loaded records from localStorage:', records);
+      } catch (err) {
+        console.error('Failed to load from localStorage:', err);
+        records = [];
+      }
+    }
+
+    function saveToLocal() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+        console.log('Saved records to localStorage. Count:', records.length);
+      } catch (err) {
+        console.error('Failed to save to localStorage:', err);
+      }
+    }
+
+    // ---------------------------
+    // Utility logic reused
+    // ---------------------------
+    function subtotal(r) {
+      return (Number(r.qty) || 1) * (Number(r.price) || 0);
+    }
+
+    // ---------------------------
+    // Rendering (KPIs, recents, tables, chart)
+    // ---------------------------
+    function renderKPIs() {
+      const achats = records.filter(r => r.record_type === 'achat');
+      const ventes = records.filter(r => r.record_type === 'vente');
+      const depenses = records.filter(r => r.record_type === 'depense');
+      const dettes = records.filter(r => r.record_type === 'dette');
+
+      const totalAchats = achats.reduce((s, r) => s + subtotal(r), 0);
+      const totalVentes = ventes.reduce((s, r) => s + subtotal(r), 0);
+      const totalDepenses = depenses.reduce((s, r) => s + subtotal(r), 0);
+      const totalDettes = dettes.reduce((s, r) => s + subtotal(r), 0);
+      const benef = totalVentes - totalAchats - totalDepenses;
+
+      el('#kpiAchats').textContent = money(totalAchats);
+      el('#kpiVentes').textContent = money(totalVentes);
+      el('#kpiCA').textContent = money(totalVentes);
+      el('#kpiCAInfo').textContent = `Basé sur ${ventes.length} vente(s) | Croissance: —`;
+      el('#kpiBenefice').textContent = money(benef);
+      el('#kpiBeneficeInfo').textContent = benef >= 0 ? `Ventes - Achats - Dépenses | Marge: —` : 'Attention: dépenses supérieures | Analyse recommandée';
+      el('#kpiDepenses').textContent = money(totalDepenses);
+      el('#kpiDettes').textContent = money(totalDettes);
+    }
+
+    function renderRecents() {
+      const listA = el('#recentAchats');
+      const listV = el('#recentVentes');
+      const listDep = el('#recentDepenses');
+      const listDet = el('#recentDettes');
+      listA.innerHTML = '';
+      listV.innerHTML = '';
+      listDep.innerHTML = '';
+      listDet.innerHTML = '';
+
+      records.filter(r => r.record_type === 'achat')
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 5)
+        .forEach(r => {
+          const li = document.createElement('li');
+          li.className = 'flex items-center justify-between rounded-xl border border-primary-100 px-4 py-3 bg-white hover:shadow-neon transition';
+          li.innerHTML = `
+            <div>
+              <div class="font-medium text-ink-800">${r.item}</div>
+              <div class="text-xs text-ink-700/60">${r.party} • ${r.date} ${r.note ? '<span class="ml-2 text-primary-600">(Note disponible)</span>' : ''}</div>
+            </div>
+            <div class="font-semibold text-ink-800">${money(subtotal(r))}</div>
+          `;
+          listA.appendChild(li);
+        });
+
+      records.filter(r => r.record_type === 'vente')
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 5)
+        .forEach(r => {
+          const li = document.createElement('li');
+          li.className = 'flex items-center justify-between rounded-xl border border-primary-100 px-4 py-3 bg-white hover:shadow-neon transition';
+          li.innerHTML = `
+            <div>
+              <div class="font-medium text-ink-800">${r.item}</div>
+              <div class="text-xs text-ink-700/60">${r.party} • ${r.date} ${r.note ? '<span class="ml-2 text-primary-600">(Note disponible)</span>' : ''}</div>
+            </div>
+            <div class="font-semibold text-ink-800">${money(subtotal(r))}</div>
+          `;
+          listV.appendChild(li);
+        });
+
+      records.filter(r => r.record_type === 'depense')
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 5)
+        .forEach(r => {
+          const li = document.createElement('li');
+          li.className = 'flex items-center justify-between rounded-xl border border-primary-100 px-4 py-3 bg-white hover:shadow-neon transition';
+          li.innerHTML = `
+            <div>
+              <div class="font-medium text-ink-800">${r.item}</div>
+              <div class="text-xs text-ink-700/60">${r.party} • ${r.date} ${r.note ? '<span class="ml-2 text-primary-600">(Note disponible)</span>' : ''}</div>
+            </div>
+            <div class="font-semibold text-ink-800">${money(subtotal(r))}</div>
+          `;
+          listDep.appendChild(li);
+        });
+
+      records.filter(r => r.record_type === 'dette')
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 5)
+        .forEach(r => {
+          const li = document.createElement('li');
+          li.className = 'flex items-center justify-between rounded-xl border border-primary-100 px-4 py-3 bg-white hover:shadow-neon transition';
+          li.innerHTML = `
+            <div>
+              <div class="font-medium text-ink-800">${r.item}</div>
+              <div class="text-xs text-ink-700/60">${r.party} • ${r.date} ${r.note ? '<span class="ml-2 text-primary-600">(Note disponible)</span>' : ''}</div>
+            </div>
+            <div class="font-semibold text-ink-800">${money(subtotal(r))}</div>
+          `;
+          listDet.appendChild(li);
+        });
+    }
+
+    function rowHTML(r, type, i) {
+      const zebra = i % 2 ? 'row-odd' : 'row-even';
+      const noteIcon = r.note ? `<span class="ml-2 text-primary-600 cursor-help" title="${r.note}">📝</span>` : '';
+      return `
+        <tr class="${zebra} hover:shadow-neon transition">
+          <td class="px-4 py-3">
+            <input type="checkbox" data-id="${r.id}" class="rowCheck h-4 w-4 rounded border-primary-200">
+          </td>
+          <td class="px-4 py-3 whitespace-nowrap">${r.date}</td>
+          <td class="px-4 py-3">${r.item} ${noteIcon}</td>
+          <td class="px-4 py-3">${r.qty}</td>
+          <td class="px-4 py-3">${money(r.price)}</td>
+          <td class="px-4 py-3">${r.party}</td>
+          <td class="px-4 py-3 text-right font-semibold">${money(subtotal(r))}</td>
+          <td class="px-4 py-3 text-right">
+            <button data-id="${r.id}" data-type="${type}" class="editOne inline-flex items-center gap-1.5 text-primary-600 hover:brightness-110 font-medium">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M4 20h16M4 20l2-12h12l2 12M4 20H3m17 0h1M12 4v8m-4-4h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Éditer
+            </button>
+            <button data-id="${r.id}" data-type="${type}" class="deleteOne inline-flex items-center gap-1.5 text-red-600 hover:brightness-110 font-medium ml-4">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M4 7h16M9 7v12m6-12v12M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7l1-2h4l1 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Supprimer
+            </button>
+          </td>
+        </tr>
+      `;
+    }
+
+    // ---------------------------
+    // Sorting
+    // ---------------------------
+    function sortTable(type, field, dir) {
+      const filteredRecords = records.filter(r => r.record_type === type);
+      filteredRecords.sort((a, b) => {
+        let va = a[field], vb = b[field];
+        if (field === 'total') { va = subtotal(a); vb = subtotal(b); }
+        if (typeof va === 'string') return dir * va.localeCompare(vb);
+        return dir * (va - vb);
+      });
+      // Put sorted records at the end (as original logic)
+      records = records.filter(r => r.record_type !== type).concat(filteredRecords);
+      saveToLocal();
+      if (type === 'achat') renderTableAchats();
+      else if (type === 'vente') renderTableVentes();
+      else if (type === 'depense') renderTableDepenses();
+      else if (type === 'dette') renderTableDettes();
+    }
+
+    // ---------------------------
+    // Table renders
+    // ---------------------------
+    function renderTableAchats() {
+      const body = el('#achatBody');
+      const q = el('#searchAchats').value.trim().toLowerCase();
+      const filtered = records.filter(r => r.record_type === 'achat' &&
+        [r.item, r.party, r.date, r.note].some(v => String(v || '').toLowerCase().includes(q))
+      );
+      body.innerHTML = filtered.map((r, i) => rowHTML(r, 'achat', i)).join('');
+      el('#achatCount').textContent = `${filtered.length} élément(s) | Filtre appliqué si recherche active`;
+      el('#totalAchats').textContent = money(filtered.reduce((s, r) => s + subtotal(r), 0));
+      updateBulkButtonsStateForTable('achat');
+    }
+
+    function renderTableVentes() {
+      const body = el('#venteBody');
+      const q = el('#searchVentes').value.trim().toLowerCase();
+      const filtered = records.filter(r => r.record_type === 'vente' &&
+        [r.item, r.party, r.date, r.note].some(v => String(v || '').toLowerCase().includes(q))
+      );
+      body.innerHTML = filtered.map((r, i) => rowHTML(r, 'vente', i)).join('');
+      el('#venteCount').textContent = `${filtered.length} élément(s) | Filtre appliqué si recherche active`;
+      el('#totalVentes').textContent = money(filtered.reduce((s, r) => s + subtotal(r), 0));
+      updateBulkButtonsStateForTable('vente');
+    }
+
+    function renderTableDepenses() {
+      const body = el('#depenseBody');
+      const q = el('#searchDepenses').value.trim().toLowerCase();
+      const filtered = records.filter(r => r.record_type === 'depense' &&
+        [r.item, r.party, r.date, r.note].some(v => String(v || '').toLowerCase().includes(q))
+      );
+      body.innerHTML = filtered.map((r, i) => rowHTML(r, 'depense', i)).join('');
+      el('#depenseCount').textContent = `${filtered.length} élément(s) | Filtre appliqué si recherche active`;
+      el('#totalDepenses').textContent = money(filtered.reduce((s, r) => s + subtotal(r), 0));
+      updateBulkButtonsStateForTable('depense');
+    }
+
+    function renderTableDettes() {
+      const body = el('#detteBody');
+      const q = el('#searchDettes').value.trim().toLowerCase();
+      const filtered = records.filter(r => r.record_type === 'dette' &&
+        [r.item, r.party, r.date, r.note].some(v => String(v || '').toLowerCase().includes(q))
+      );
+      body.innerHTML = filtered.map((r, i) => rowHTML(r, 'dette', i)).join('');
+      el('#detteCount').textContent = `${filtered.length} élément(s) | Filtre appliqué si recherche active`;
+      el('#totalDettes').textContent = money(filtered.reduce((s, r) => s + subtotal(r), 0));
+      updateBulkButtonsStateForTable('dette');
+    }
+
+    // ---------------------------
+    // Bulk buttons state (improved)
+    // ---------------------------
+    function updateBulkButtonsStateForTable(type) {
+      let btn;
+      if (type === 'achat') btn = el('#deleteSelectedAchats');
+      else if (type === 'vente') btn = el('#deleteSelectedVentes');
+      else if (type === 'depense') btn = el('#deleteSelectedDepenses');
+      else if (type === 'dette') btn = el('#deleteSelectedDettes');
+      const bodyId = type === 'achat' ? 'achatBody' : type === 'vente' ? 'venteBody' : type === 'depense' ? 'depenseBody' : 'detteBody';
+      const anyChecked = els(`#${bodyId} .rowCheck`).some(c => c.checked);
+      if (btn) btn.disabled = !anyChecked;
+    }
+
+    // ---------------------------
+    // Modal open/close + save locally
+    // ---------------------------
+    function openModal(type, id = null) {
+      formContext = type;
+      editId = id;
+      const titles = {
+        achat: { title: 'Nouvel Achat', item: 'Article', party: 'Fournisseur' },
+        vente: { title: 'Nouvelle Vente', item: 'Article', party: 'Client' },
+        depense: { title: 'Nouvelle Dépense', item: 'Description', party: 'Bénéficiaire' },
+        dette: { title: 'Nouvelle Dette', item: 'Description', party: 'Créancier' }
+      };
+      el('#modalTitle').textContent = id ? `Modifier ${titles[type].title}` : titles[type].title;
+      el('#f_item_label').textContent = titles[type].item;
+      el('#f_party_label').textContent = titles[type].party;
+      el('#formError').classList.add('hidden');
+
+      if (id) {
+        const r = records.find(r => r.id === id && r.record_type === type);
+        if (r) {
+          el('#f_id').value = r.id;
+          el('#f_date').value = r.date;
+          el('#f_item').value = r.item;
+          el('#f_qty').value = r.qty;
+          el('#f_price').value = r.price;
+          el('#f_party').value = r.party;
+          el('#f_note').value = r.note || '';
+        }
+      } else {
+        el('#entryForm').reset();
+        el('#f_date').value = new Date().toISOString().split('T')[0];
+      }
+
+      el('#modalOverlay').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      el('#modalOverlay').classList.add('hidden');
+      el('#entryForm').reset();
+      editId = null;
+      el('#formError').classList.add('hidden');
+    }
+
+    function nextId() {
+      const max = records.reduce((m, r) => Math.max(m, Number(r.id) || 0), 0);
+      return max + 1 || Date.now();
+    }
+
+    function saveEntry(e) {
+      e.preventDefault();
+      const data = {
+        record_type: formContext,
+        date: el('#f_date').value,
+        item: el('#f_item').value.trim(),
+        qty: Number(el('#f_qty').value),
+        price: Number(el('#f_price').value),
+        party: el('#f_party').value.trim(),
+        note: el('#f_note').value.trim()
+      };
+
+      if (!data.date || !data.item || !data.party || data.qty < 1 || data.price < 0) {
+        el('#formError').classList.remove('hidden');
+        return;
+      }
+
+      if (editId) {
+        // update
+        const idx = records.findIndex(r => r.id === Number(editId) && r.record_type === formContext);
+        if (idx !== -1) {
+          records[idx] = { ...records[idx], ...data, id: Number(editId) };
+        } else {
+          // fallback: try to find by id regardless of type
+          const idx2 = records.findIndex(r => r.id === Number(editId));
+          if (idx2 !== -1) records[idx2] = { ...records[idx2], ...data, id: Number(editId) };
+        }
+      } else {
+        // create
+        const id = nextId();
+        records.push({ id, ...data });
+      }
+
+      saveToLocal();
+      renderAll();
+      closeModal();
+    }
+
+    // ---------------------------
+    // Delete (single or multiple) local
+    // ---------------------------
+    function openConfirmModal(ids, type, isBulk = false) {
+      el('#confirmText').textContent = isBulk
+        ? `Voulez-vous vraiment supprimer ${ids.length} éléments sélectionnés ? Cette action est irréversible et affectera vos KPIs.`
+        : 'Voulez-vous vraiment supprimer cet élément ? Cette action est irréversible et affectera vos KPIs.';
+      el('#confirmOverlay').classList.remove('hidden');
+      el('#confirmOk').onclick = () => deleteEntries(ids, type);
+    }
+
+    function deleteEntries(ids, type) {
+      // remove from records and save
+      records = records.filter(r => !ids.includes(Number(r.id)));
+      saveToLocal();
+      renderAll();
+      el('#confirmOverlay').classList.add('hidden');
+    }
+
+    // ---------------------------
+    // Export PDF (unchanged logic)
+    // ---------------------------
+    function exportPDF(type) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const filtered = records.filter(r => r.record_type === type);
+      const headers = ['Date', 'Article', 'Quantité', 'Prix Unitaire (FCFA)', type === 'achat' ? 'Fournisseur' : type === 'vente' ? 'Client' : type === 'depense' ? 'Bénéficiaire' : 'Créancier', 'Total (FCFA)', 'Note'];
+      const rows = filtered.map(r => [
+        r.date,
+        r.item,
+        r.qty,
+        money(r.price),
+        r.party,
+        money(subtotal(r)),
+        r.note || ''
+      ]);
+      doc.setFontSize(12);
+      doc.text(`Rapport ${type.charAt(0).toUpperCase() + type.slice(1)}s - ${new Date().toLocaleDateString('fr-FR')}`, 10, 10);
+      let y = 20;
+      headers.forEach((h, i) => doc.text(h, 10 + i * 30, y));
+      y += 10;
+      rows.forEach(row => {
+        row.forEach((cell, i) => doc.text(String(cell), 10 + i * 30, y));
+        y += 10;
+      });
+      doc.save(`${type}s_${new Date().toISOString().split('T')[0]}.pdf`);
+    }
+
+    // ---------------------------
+    // Chart (kept similar but with small maintainability improvements)
+    // ---------------------------
+    function renderChart() {
+      const svg = el('#monthlyChart');
+      svg.innerHTML = '';
+      const months = [...new Set(records.map(r => r.date.slice(0, 7)))].sort();
+      if (months.length === 0) return;
+
+      const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+      const width = 800 - margin.left - margin.right;
+      const height = 300 - margin.top - margin.bottom;
+
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+      svg.appendChild(g);
+
+      const monthlyData = months.map(m => ({
+        month: m,
+        achats: records.filter(r => r.record_type === 'achat' && r.date.startsWith(m)).reduce((s, r) => s + subtotal(r), 0),
+        ventes: records.filter(r => r.record_type === 'vente' && r.date.startsWith(m)).reduce((s, r) => s + subtotal(r), 0),
+        depenses: records.filter(r => r.record_type === 'depense' && r.date.startsWith(m)).reduce((s, r) => s + subtotal(r), 0),
+        dettes: records.filter(r => r.record_type === 'dette' && r.date.startsWith(m)).reduce((s, r) => s + subtotal(r), 0)
+      }));
+
+      const maxY = Math.max(...monthlyData.flatMap(d => [d.achats, d.ventes, d.depenses, d.dettes]), 1);
+      const xScale = (i) => (i / (months.length - 1)) * width;
+      const yScale = (v) => height - (v / maxY) * height;
+
+      const colors = {
+        achats: '#1a75ff',
+        depenses: '#ef4444',
+        ventes: '#ffd443',
+        dettes: '#8b5cf6'
+      };
+
+      const series = ['achats', 'depenses', 'ventes', 'dettes'];
+
+      series.forEach((label, seriesIndex) => {
+        monthlyData.forEach((d, i) => {
+          const barWidth = (width / months.length) / series.length - 2;
+          const offset = seriesIndex * (barWidth + 2) - ((series.length - 1) * (barWidth + 2)) / 2;
+          const x = xScale(i) + offset + (width / months.length) / 2;
+          const val = d[label];
+          const y = yScale(val);
+          const barHeight = height - y;
+          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          rect.setAttribute('x', x);
+          rect.setAttribute('y', y);
+          rect.setAttribute('width', barWidth);
+          rect.setAttribute('height', barHeight);
+          rect.setAttribute('fill', colors[label]);
+          rect.setAttribute('class', 'bar');
+          g.appendChild(rect);
+        });
+      });
+
+      months.forEach((m, i) => {
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', xScale(i));
+        text.setAttribute('y', height + 30);
+        text.setAttribute('class', 'chart-label');
+        text.setAttribute('text-anchor', 'middle');
+        text.textContent = m;
+        g.appendChild(text);
+      });
+
+      const yTicks = [0, Math.round(maxY / 2), Math.round(maxY)];
+      yTicks.forEach(v => {
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', -10);
+        text.setAttribute('y', yScale(v) + 5);
+        text.setAttribute('class', 'chart-label');
+        text.setAttribute('text-anchor', 'end');
+        text.textContent = money(v);
+        g.appendChild(text);
+      });
+    }
+
+    // ---------------------------
+    // Full render
+    // ---------------------------
+    function renderAll() {
+      renderKPIs();
+      renderRecents();
+      renderChart();
+      if (activeSection === 'achats') renderTableAchats();
+      else if (activeSection === 'ventes') renderTableVentes();
+      else if (activeSection === 'depenses') renderTableDepenses();
+      else if (activeSection === 'dettes') renderTableDettes();
+    }
+
+    // ---------------------------
+    // Sidebar helpers
+    // ---------------------------
+    function openSidebar() {
+      el('#sidebar').classList.remove('-left-[320px]');
+      el('#sidebar').classList.add('left-0', 'shadow-2xl');
+    }
+
+    function closeSidebar() {
+      el('#sidebar').classList.add('-left-[320px]');
+      el('#sidebar').classList.remove('left-0', 'shadow-2xl');
+    }
+
+    // ---------------------------
+    // Event wiring
+    // ---------------------------
+    el('#openSidebar').addEventListener('click', openSidebar);
+    el('#closeModal').addEventListener('click', closeModal);
+    el('#cancelForm').addEventListener('click', closeModal);
+    el('#entryForm').addEventListener('submit', saveEntry);
+    el('#confirmCancel').addEventListener('click', () => el('#confirmOverlay').classList.add('hidden'));
+
+    els('.nav-link').forEach(btn => {
+      btn.addEventListener('click', () => setActiveSection(btn.dataset.target));
+    });
+
+    el('#quickAddAchat').addEventListener('click', () => openModal('achat'));
+    el('#quickAddVente').addEventListener('click', () => openModal('vente'));
+    el('#quickAddDepense').addEventListener('click', () => openModal('depense'));
+    el('#quickAddDette').addEventListener('click', () => openModal('dette'));
+    el('#addAchat').addEventListener('click', () => openModal('achat'));
+    el('#addVente').addEventListener('click', () => openModal('vente'));
+    el('#addDepense').addEventListener('click', () => openModal('depense'));
+    el('#addDette').addEventListener('click', () => openModal('dette'));
+
+    el('#exportAchats').addEventListener('click', () => exportPDF('achat'));
+    el('#exportVentes').addEventListener('click', () => exportPDF('vente'));
+    el('#exportDepenses').addEventListener('click', () => exportPDF('depense'));
+    el('#exportDettes').addEventListener('click', () => exportPDF('dette'));
+
+    el('#searchAchats').addEventListener('input', debounce(() => renderTableAchats(), 300));
+    el('#searchVentes').addEventListener('input', debounce(() => renderTableVentes(), 300));
+    el('#searchDepenses').addEventListener('input', debounce(() => renderTableDepenses(), 300));
+    el('#searchDettes').addEventListener('input', debounce(() => renderTableDettes(), 300));
+
+    // select all handlers
+    el('#selectAllAchats').addEventListener('change', (e) => {
+      els('#achatBody .rowCheck').forEach(c => c.checked = e.target.checked);
+      updateBulkButtonsStateForTable('achat');
+    });
+    el('#selectAllVentes').addEventListener('change', (e) => {
+      els('#venteBody .rowCheck').forEach(c => c.checked = e.target.checked);
+      updateBulkButtonsStateForTable('vente');
+    });
+    el('#selectAllDepenses').addEventListener('change', (e) => {
+      els('#depenseBody .rowCheck').forEach(c => c.checked = e.target.checked);
+      updateBulkButtonsStateForTable('depense');
+    });
+    el('#selectAllDettes').addEventListener('change', (e) => {
+      els('#detteBody .rowCheck').forEach(c => c.checked = e.target.checked);
+      updateBulkButtonsStateForTable('dette');
+    });
+
+    // bulk delete buttons
+    el('#deleteSelectedAchats').addEventListener('click', () => {
+      const ids = els('#achatBody .rowCheck:checked').map(c => Number(c.dataset.id));
+      if (ids.length) openConfirmModal(ids, 'achat', true);
+    });
+    el('#deleteSelectedVentes').addEventListener('click', () => {
+      const ids = els('#venteBody .rowCheck:checked').map(c => Number(c.dataset.id));
+      if (ids.length) openConfirmModal(ids, 'vente', true);
+    });
+    el('#deleteSelectedDepenses').addEventListener('click', () => {
+      const ids = els('#depenseBody .rowCheck:checked').map(c => Number(c.dataset.id));
+      if (ids.length) openConfirmModal(ids, 'depense', true);
+    });
+    el('#deleteSelectedDettes').addEventListener('click', () => {
+      const ids = els('#detteBody .rowCheck:checked').map(c => Number(c.dataset.id));
+      if (ids.length) openConfirmModal(ids, 'dette', true);
+    });
+
+    // delegate some clicks (use closest to handle clicks on icons/SVGs)
+    document.addEventListener('click', (e) => {
+      const editBtn = e.target.closest('.editOne');
+      const delBtn = e.target.closest('.deleteOne');
+
+      if (editBtn) {
+        const id = Number(editBtn.dataset.id);
+        const type = editBtn.dataset.type;
+        openModal(type, id);
+        return;
+      }
+      if (delBtn) {
+        const id = Number(delBtn.dataset.id);
+        const type = delBtn.dataset.type;
+        openConfirmModal([id], type);
+        return;
+      }
+
+      // sorting: if clicking inside th[data-sort]
+      const th = e.target.closest('th[data-sort]');
+      if (th) {
+        const field = th.dataset.sort;
+        // determine direction toggle
+        const span = th.querySelector('span');
+        const dir = span && span.textContent === '▼' ? -1 : 1;
+        sortTable(formContext, field, dir);
+        if (span) span.textContent = dir === 1 ? '▲' : '▼';
+      }
+    });
+
+    // handle change on checkboxes to update bulk button state for the correct table
+    document.addEventListener('change', (e) => {
+      if (e.target && e.target.matches('.rowCheck')) {
+        // find which tbody this checkbox belongs to
+        const tbody = e.target.closest('tbody');
+        if (!tbody) return;
+        const id = tbody.id;
+        const type = id === 'achatBody' ? 'achat' : id === 'venteBody' ? 'vente' : id === 'depenseBody' ? 'depense' : 'dette';
+        updateBulkButtonsStateForTable(type);
+      }
+    });
+
+    // ---------------------------
+    // setActiveSection
+    // ---------------------------
+    function setActiveSection(name) {
+      activeSection = name;
+      els('.section').forEach(s => s.classList.add('hidden'));
+      el(`#${name}Section`).classList.remove('hidden');
+      el('#pageTitle').textContent = ({
+        dashboard: 'Dashboard Central',
+        achats: 'Gestion Achats',
+        ventes: 'Gestion Ventes',
+        depenses: 'Gestion Dépenses',
+        dettes: 'Gestion Dettes'
+      })[name];
+
+      els('.nav-link').forEach(b => b.classList.remove('nav-active', 'active'));
+      const activeBtn = document.querySelector(`.nav-link[data-target="${name}"]`);
+      if (activeBtn) activeBtn.classList.add('nav-active', 'active');
+
+      renderAll();
+      closeSidebar();
+    }
+
+    // ---------------------------
+    // Init: load from localStorage and render
+    // ---------------------------
+    loadFromLocal();
+    // ensure some defaults if needed (you can uncomment to provide sample data on first load)
+    // if (!records.length) {
+    //   records.push({ id: 1, record_type: 'achat', date: new Date().toISOString().split('T')[0], item: 'Ex', qty: 1, price: 1000, party: 'Fourn', note: '' });
+    //   saveToLocal();
+    // }
+    renderAll();
+    setActiveSection('dashboard');
+
+  </script>
+</body>
+</html>
