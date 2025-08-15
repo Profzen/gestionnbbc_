@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
   <!-- jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <script>
     tailwind.config = {
       theme: {
@@ -87,6 +88,7 @@
   </script>
 
   <style>
+    /* Background / visual */
     .bg-figma {
       position: fixed;
       inset: 0;
@@ -121,6 +123,7 @@
     .beam.one { width: 420px; height: 420px; top: 8%; left: 12%; border-radius: 50%; }
     .beam.two { width: 520px; height: 520px; bottom: 10%; right: 8%; border-radius: 50%; }
 
+    /* Cards */
     .card {
       background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.88));
       border: 1px solid rgba(16,24,40,0.08);
@@ -142,9 +145,7 @@
       opacity: 0.35;
       animation: sheen 8s ease-in-out infinite;
     }
-    .glow-ring {
-      position: relative;
-    }
+    .glow-ring { position: relative; }
     .glow-ring::before {
       content: "";
       position: absolute;
@@ -160,7 +161,6 @@
     .glow-ring.active::before { opacity: 1; box-shadow: 0 0 15px rgba(26,117,255,0.4); }
 
     .no-blur { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
-
     .nav-active {
       background: linear-gradient(90deg, rgba(26,117,255,0.12), rgba(26,117,255,0.06));
       color: #104aa5 !important;
@@ -174,6 +174,32 @@
 
     .bar { transition: height 0.5s ease; }
     .chart-label { font-size: 12px; fill: #1f2937; }
+
+    /* -------------------------
+       Responsive table (mobile)
+       - On small screens: hide thead and render rows as cards
+       ------------------------- */
+    @media (max-width: 640px) {
+      table { border-collapse: separate; }
+      table thead { display: none; }
+      table tbody tr { display: block; margin-bottom: 0.75rem; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.04); border: 1px solid rgba(16,24,40,0.04); }
+      table td { display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.8rem; }
+      table td:first-child { padding-top: 0.8rem; }
+      table td:last-child { padding-bottom: 0.8rem; }
+      table td::before { content: attr(data-label); font-weight: 600; color: #374151; margin-right: 0.75rem; display: inline-block; width: 45%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .chart-label { font-size: 10px; }
+      /* make header compact */
+      header .card { padding: 0.25rem; }
+      /* Keep modal width comfortable */
+      #modalOverlay .card { margin: 1rem; }
+    }
+
+    /* Slight improvements for medium screens */
+    @media (max-width: 1024px) {
+      .min-h-screen.flex { flex-direction: column; }
+      aside#sidebar { position: relative; width: 100%; left: 0 !important; transform: none; }
+      main { margin-top: 1rem; }
+    }
   </style>
 </head>
 <body class="font-sans text-ink-800 antialiased">
@@ -182,13 +208,13 @@
   <div class="beam two"></div>
 
   <div class="min-h-screen flex">
-    <aside id="sidebar" class="w-[300px] shrink-0 fixed sm:static inset-y-0 -left-[320px] sm:left-0 transition-all duration-300 z-40">
+    <aside id="sidebar" class="w-[300px] shrink-0 fixed sm:static inset-y-0 -left-[320px] sm:left-0 transition-all duration-300 z-40 bg-transparent">
       <div class="h-full flex flex-col">
         <div class="px-6 pt-6">
           <div class="card" style="--shadow: 0 10px 30px rgba(26,117,255,0.12), 0 4px 14px rgba(0,0,0,0.06)">
             <div class="p-5 flex items-center gap-3">
-              <!-- Logo updated: now expects nbbc.jpg in same folder as this file -->
-              <img src="nbbc.PNG" alt="logo" style="width: 70px; height: auto;">
+              <!-- Logo: nbbc.jpg must be in same folder -->
+              <img src="nbbc.png" alt="logo" style="width: 70px; height: auto;">
               <div>
                 <div class="font-display text-xl font-bold tracking-tight text-primary-800">NBBC Gestion</div>
                 <div class="text-xs text-ink-700/60">New Boss Business Center</div>
@@ -253,10 +279,10 @@
 
           <div class="mt-8 pt-6">
             <div class="grid grid-cols-2 gap-3">
-              <button id="quickAddAchat" class="glow-ring active rounded-xl px-3 py-2.5 bg-white text-primary-700 border border-primary-200 font-semibold shadow-neon hover:shadow-soft transition animation-pulseGlow">+ Nouvel Achat</button>
-              <button id="quickAddVente" class="glow-ring rounded-xl px-3 py-2.5 bg-gradient-to-br from-accent-500 to-yellow-300 text-ink-800 font-extrabold shadow-neon hover:brightness-105 transition animation-pulseGlow">+ Nouvelle Vente</button>
-              <button id="quickAddDepense" class="glow-ring active rounded-xl px-3 py-2.5 bg-white text-red-700 border border-red-200 font-semibold shadow-neon hover:shadow-soft transition animation-pulseGlow">+ Nouvelle Dépense</button>
-              <button id="quickAddDette" class="glow-ring rounded-xl px-3 py-2.5 bg-gradient-to-br from-purple-500 to-purple-300 text-ink-800 font-extrabold shadow-neon hover:brightness-105 transition animation-pulseGlow">+ Nouvelle Dette</button>
+              <button id="quickAddAchat" class="glow-ring active rounded-xl px-3 py-2.5 bg-white text-primary-700 border border-primary-200 font-semibold shadow-neon hover:shadow-soft transition animation-pulseGlow text-xs sm:text-sm">+ Nouvel Achat</button>
+              <button id="quickAddVente" class="glow-ring rounded-xl px-3 py-2.5 bg-gradient-to-br from-accent-500 to-yellow-300 text-ink-800 font-extrabold shadow-neon hover:brightness-105 transition animation-pulseGlow text-xs sm:text-sm">+ Nouvelle Vente</button>
+              <button id="quickAddDepense" class="glow-ring active rounded-xl px-3 py-2.5 bg-white text-red-700 border border-red-200 font-semibold shadow-neon hover:shadow-soft transition animation-pulseGlow text-xs sm:text-sm">+ Nouvelle Dépense</button>
+              <button id="quickAddDette" class="glow-ring rounded-xl px-3 py-2.5 bg-gradient-to-br from-purple-500 to-purple-300 text-ink-800 font-extrabold shadow-neon hover:brightness-105 transition animation-pulseGlow text-xs sm:text-sm">+ Nouvelle Dette</button>
             </div>
           </div>
         </nav>
@@ -270,7 +296,7 @@
     </aside>
 
     <main class="flex-1 min-w-0 sm:ml-0">
-      <header class="no-blur sticky top-0 z-30">
+      <header class="no-blur sticky top-0 z-30 bg-transparent">
         <div class="px-4 sm:px-6">
           <div class="mt-4 card">
             <div class="px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -282,12 +308,16 @@
                 </button>
                 <h1 id="pageTitle" class="font-display text-xl sm:text-2xl font-bold text-ink-800">Dashboard</h1>
               </div>
+              <div class="hidden sm:flex items-center gap-3">
+                <!-- optional header controls on wide screens -->
+              </div>
             </div>
           </div>
         </div>
       </header>
 
       <section class="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+        <!-- DASHBOARD -->
         <div id="dashboardSection" class="section">
           <div class="grid lg:grid-cols-4 sm:grid-cols-2 grid-cols-1 gap-5">
             <div class="card animation-pulseGlow">
@@ -349,6 +379,7 @@
                 <div class="mt-2 text-xs text-ink-700/60" id="kpiBeneficeInfo">Ventes - Achats | Marge: —</div>
               </div>
             </div>
+
             <div class="card animation-pulseGlow">
               <div class="p-5">
                 <div class="flex items-center justify-between">
@@ -363,6 +394,7 @@
                 <div class="mt-2 text-xs text-ink-700/60">Dépenses cumulées | Moyenne par dépense: —</div>
               </div>
             </div>
+
             <div class="card animation-pulseGlow">
               <div class="p-5">
                 <div class="flex items-center justify-between">
@@ -382,7 +414,7 @@
           <div class="card mt-6">
             <div class="p-5">
               <h3 class="font-semibold text-ink-800 mb-4">Évolution Mensuelle (Achats, Dépenses vs Ventes, Dettes)</h3>
-              <svg id="monthlyChart" width="100%" height="300" viewBox="0 0 800 300"></svg>
+              <svg id="monthlyChart" width="100%" height="300" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet"></svg>
               <div class="mt-4 text-xs text-ink-700/60">Données basées sur les enregistrements. Bleu: Achats, Rouge: Dépenses, Jaune: Ventes, Violet: Dettes.</div>
             </div>
           </div>
@@ -407,6 +439,7 @@
               </div>
             </div>
           </div>
+
           <div class="grid lg:grid-cols-2 gap-6 mt-6">
             <div class="card">
               <div class="p-5 flex items-center justify-between">
@@ -429,6 +462,7 @@
           </div>
         </div>
 
+        <!-- ACHATS SECTION -->
         <div id="achatsSection" class="section hidden">
           <div class="card">
             <div class="p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-4 md:justify-between">
@@ -493,6 +527,7 @@
           </div>
         </div>
 
+        <!-- VENTES SECTION -->
         <div id="ventesSection" class="section hidden">
           <div class="card">
             <div class="p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-4 md:justify-between">
@@ -556,6 +591,8 @@
             </div>
           </div>
         </div>
+
+        <!-- DEPENSES SECTION -->
         <div id="depensesSection" class="section hidden">
           <div class="card">
             <div class="p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-4 md:justify-between">
@@ -619,6 +656,8 @@
             </div>
           </div>
         </div>
+
+        <!-- DETTES SECTION -->
         <div id="dettesSection" class="section hidden">
           <div class="card">
             <div class="p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-4 md:justify-between">
@@ -653,9 +692,9 @@
                   </svg>
                   Exporter PDF Dettes
                 </button>
-              </div> 
+              </div>
 
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto mt-4">
               <table class="min-w-full text-sm">
                 <thead class="bg-primary-50 text-ink-700/80">
                   <tr>
@@ -681,9 +720,11 @@
             </div>
           </div>
         </div>
+
       </section>
     </main>
 
+    <!-- Modal -->
     <div id="modalOverlay" class="fixed inset-0 z-50 hidden">
       <div class="absolute inset-0 bg-ink-800/50"></div>
       <div class="relative max-w-lg mx-auto mt-16 sm:mt-24">
@@ -737,6 +778,7 @@
       </div>
     </div>
 
+    <!-- Confirm Modal -->
     <div id="confirmOverlay" class="fixed inset-0 z-50 hidden">
       <div class="absolute inset-0 bg-ink-800/50"></div>
       <div class="relative max-w-md mx-auto mt-20">
@@ -918,21 +960,22 @@
         });
     }
 
+    // rowHTML updated: adds data-label attributes for responsive mobile view
     function rowHTML(r, type, i) {
       const zebra = i % 2 ? 'row-odd' : 'row-even';
       const noteIcon = r.note ? `<span class="ml-2 text-primary-600 cursor-help" title="${r.note}">📝</span>` : '';
       return `
         <tr class="${zebra} hover:shadow-neon transition">
-          <td class="px-4 py-3">
+          <td class="px-4 py-3" data-label="Sélection">
             <input type="checkbox" data-id="${r.id}" class="rowCheck h-4 w-4 rounded border-primary-200">
           </td>
-          <td class="px-4 py-3 whitespace-nowrap">${r.date}</td>
-          <td class="px-4 py-3">${r.item} ${noteIcon}</td>
-          <td class="px-4 py-3">${r.qty}</td>
-          <td class="px-4 py-3">${money(r.price)}</td>
-          <td class="px-4 py-3">${r.party}</td>
-          <td class="px-4 py-3 text-right font-semibold">${money(subtotal(r))}</td>
-          <td class="px-4 py-3 text-right">
+          <td class="px-4 py-3 whitespace-nowrap" data-label="Date">${r.date}</td>
+          <td class="px-4 py-3" data-label="Article">${r.item} ${noteIcon}</td>
+          <td class="px-4 py-3" data-label="Quantité">${r.qty}</td>
+          <td class="px-4 py-3" data-label="Prix Unitaire">${money(r.price)}</td>
+          <td class="px-4 py-3" data-label="Fournisseur/Client">${r.party}</td>
+          <td class="px-4 py-3 text-right font-semibold" data-label="Total">${money(subtotal(r))}</td>
+          <td class="px-4 py-3 text-right" data-label="Actions">
             <button data-id="${r.id}" data-type="${type}" class="editOne inline-flex items-center gap-1.5 text-primary-600 hover:brightness-110 font-medium">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path d="M4 20h16M4 20l2-12h12l2 12M4 20H3m17 0h1M12 4v8m-4-4h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -950,9 +993,7 @@
       `;
     }
 
-    // ---------------------------
-    // Sorting
-    // ---------------------------
+    // Sorting (same logic)
     function sortTable(type, field, dir) {
       const filteredRecords = records.filter(r => r.record_type === type);
       filteredRecords.sort((a, b) => {
@@ -961,7 +1002,6 @@
         if (typeof va === 'string') return dir * va.localeCompare(vb);
         return dir * (va - vb);
       });
-      // Put sorted records at the end (as original logic)
       records = records.filter(r => r.record_type !== type).concat(filteredRecords);
       saveToLocal();
       if (type === 'achat') renderTableAchats();
@@ -970,9 +1010,7 @@
       else if (type === 'dette') renderTableDettes();
     }
 
-    // ---------------------------
     // Table renders
-    // ---------------------------
     function renderTableAchats() {
       const body = el('#achatBody');
       const q = el('#searchAchats').value.trim().toLowerCase();
@@ -1021,9 +1059,7 @@
       updateBulkButtonsStateForTable('dette');
     }
 
-    // ---------------------------
     // Bulk buttons state (improved)
-    // ---------------------------
     function updateBulkButtonsStateForTable(type) {
       let btn;
       if (type === 'achat') btn = el('#deleteSelectedAchats');
@@ -1035,9 +1071,7 @@
       if (btn) btn.disabled = !anyChecked;
     }
 
-    // ---------------------------
     // Modal open/close + save locally
-    // ---------------------------
     function openModal(type, id = null) {
       formContext = type;
       editId = id;
@@ -1101,17 +1135,14 @@
       }
 
       if (editId) {
-        // update
         const idx = records.findIndex(r => r.id === Number(editId) && r.record_type === formContext);
         if (idx !== -1) {
           records[idx] = { ...records[idx], ...data, id: Number(editId) };
         } else {
-          // fallback: try to find by id regardless of type
           const idx2 = records.findIndex(r => r.id === Number(editId));
           if (idx2 !== -1) records[idx2] = { ...records[idx2], ...data, id: Number(editId) };
         }
       } else {
-        // create
         const id = nextId();
         records.push({ id, ...data });
       }
@@ -1121,9 +1152,7 @@
       closeModal();
     }
 
-    // ---------------------------
     // Delete (single or multiple) local
-    // ---------------------------
     function openConfirmModal(ids, type, isBulk = false) {
       el('#confirmText').textContent = isBulk
         ? `Voulez-vous vraiment supprimer ${ids.length} éléments sélectionnés ? Cette action est irréversible et affectera vos KPIs.`
@@ -1133,16 +1162,13 @@
     }
 
     function deleteEntries(ids, type) {
-      // remove from records and save
       records = records.filter(r => !ids.includes(Number(r.id)));
       saveToLocal();
       renderAll();
       el('#confirmOverlay').classList.add('hidden');
     }
 
-    // ---------------------------
-    // Export PDF (unchanged logic)
-    // ---------------------------
+    // Export PDF
     function exportPDF(type) {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
@@ -1169,9 +1195,7 @@
       doc.save(`${type}s_${new Date().toISOString().split('T')[0]}.pdf`);
     }
 
-    // ---------------------------
-    // Chart (kept similar but with small maintainability improvements)
-    // ---------------------------
+    // Chart (responsive)
     function renderChart() {
       const svg = el('#monthlyChart');
       svg.innerHTML = '';
@@ -1248,9 +1272,7 @@
       });
     }
 
-    // ---------------------------
     // Full render
-    // ---------------------------
     function renderAll() {
       renderKPIs();
       renderRecents();
@@ -1261,9 +1283,7 @@
       else if (activeSection === 'dettes') renderTableDettes();
     }
 
-    // ---------------------------
     // Sidebar helpers
-    // ---------------------------
     function openSidebar() {
       el('#sidebar').classList.remove('-left-[320px]');
       el('#sidebar').classList.add('left-0', 'shadow-2xl');
@@ -1274,9 +1294,7 @@
       el('#sidebar').classList.remove('left-0', 'shadow-2xl');
     }
 
-    // ---------------------------
     // Event wiring
-    // ---------------------------
     el('#openSidebar').addEventListener('click', openSidebar);
     el('#closeModal').addEventListener('click', closeModal);
     el('#cancelForm').addEventListener('click', closeModal);
@@ -1284,7 +1302,11 @@
     el('#confirmCancel').addEventListener('click', () => el('#confirmOverlay').classList.add('hidden'));
 
     els('.nav-link').forEach(btn => {
-      btn.addEventListener('click', () => setActiveSection(btn.dataset.target));
+      btn.addEventListener('click', () => {
+        setActiveSection(btn.dataset.target);
+        // on small screens close sidebar after navigation
+        if (window.innerWidth <= 640) closeSidebar();
+      });
     });
 
     el('#quickAddAchat').addEventListener('click', () => openModal('achat'));
@@ -1364,7 +1386,6 @@
       const th = e.target.closest('th[data-sort]');
       if (th) {
         const field = th.dataset.sort;
-        // determine direction toggle
         const span = th.querySelector('span');
         const dir = span && span.textContent === '▼' ? -1 : 1;
         sortTable(formContext, field, dir);
@@ -1375,7 +1396,6 @@
     // handle change on checkboxes to update bulk button state for the correct table
     document.addEventListener('change', (e) => {
       if (e.target && e.target.matches('.rowCheck')) {
-        // find which tbody this checkbox belongs to
         const tbody = e.target.closest('tbody');
         if (!tbody) return;
         const id = tbody.id;
@@ -1384,9 +1404,7 @@
       }
     });
 
-    // ---------------------------
     // setActiveSection
-    // ---------------------------
     function setActiveSection(name) {
       activeSection = name;
       els('.section').forEach(s => s.classList.add('hidden'));
@@ -1407,19 +1425,13 @@
       closeSidebar();
     }
 
-    // ---------------------------
     // Init: load from localStorage and render
-    // ---------------------------
     loadFromLocal();
-    // ensure some defaults if needed (you can uncomment to provide sample data on first load)
-    // if (!records.length) {
-    //   records.push({ id: 1, record_type: 'achat', date: new Date().toISOString().split('T')[0], item: 'Ex', qty: 1, price: 1000, party: 'Fourn', note: '' });
-    //   saveToLocal();
-    // }
     renderAll();
     setActiveSection('dashboard');
 
+    // Expose saveToLocal for console debugging if needed
+    window._nbbc = { saveToLocal, loadFromLocal, records };
   </script>
 </body>
 </html>
-
