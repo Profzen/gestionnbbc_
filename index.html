@@ -213,7 +213,7 @@
         <div class="px-6 pt-6">
           <div class="card" style="--shadow: 0 10px 30px rgba(26,117,255,0.12), 0 4px 14px rgba(0,0,0,0.06)">
             <div class="p-5 flex items-center gap-3">
-              <!-- Logo: nbbc.j must be in same folder -->
+              <!-- Logo: nbbc.jpg must be in same folder -->
               <img src="nbbcl.png" alt="logo" style="width: 70px; height: auto;">
               <div>
                 <div class="font-display text-xl font-bold tracking-tight text-primary-800">NBBC Gestion</div>
@@ -864,6 +864,7 @@
     // Rendering (KPIs, recents, tables, chart)
     // ---------------------------
     function renderKPIs() {
+      console.log('Rendering KPIs');
       const achats = records.filter(r => r.record_type === 'achat');
       const ventes = records.filter(r => r.record_type === 'vente');
       const depenses = records.filter(r => r.record_type === 'depense');
@@ -873,19 +874,36 @@
       const totalVentes = ventes.reduce((s, r) => s + subtotal(r), 0);
       const totalDepenses = depenses.reduce((s, r) => s + subtotal(r), 0);
       const totalDettes = dettes.reduce((s, r) => s + subtotal(r), 0);
-      const benef = totalVentes - totalAchats - totalDepenses;
+
+      // Quantités totales
+      const totalQtyAchats = achats.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+      const totalQtyVentes = ventes.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+
+      // Coût unitaire moyen pondéré (achats et ventes)
+      const avgUnitAchat = totalQtyAchats > 0 ? (totalAchats / totalQtyAchats) : 0;
+      const avgUnitVente = totalQtyVentes > 0 ? (totalVentes / totalQtyVentes) : 0;
+
+      // NOUVELLE FORMULE demandée :
+      // benefice = (coût unitaire moyen pondéré vente - coût unitaire moyen pondéré achat) * quantité vendu
+      const benef = (avgUnitVente - avgUnitAchat) * totalQtyVentes;
 
       el('#kpiAchats').textContent = money(totalAchats);
       el('#kpiVentes').textContent = money(totalVentes);
       el('#kpiCA').textContent = money(totalVentes);
       el('#kpiCAInfo').textContent = `Basé sur ${ventes.length} vente(s) | Croissance: —`;
+
       el('#kpiBenefice').textContent = money(benef);
-      el('#kpiBeneficeInfo').textContent = benef >= 0 ? `Ventes - Achats - Dépenses | Marge: —` : 'Attention: dépenses supérieures | Analyse recommandée';
+
+      // Explication affichée : on montre les moyennes et la quantité utilisée
+      el('#kpiBeneficeInfo').textContent =
+        `(${money(avgUnitVente)} - ${money(avgUnitAchat)}) × ${totalQtyVentes} = ${money(benef)}`;
+
       el('#kpiDepenses').textContent = money(totalDepenses);
       el('#kpiDettes').textContent = money(totalDettes);
     }
 
     function renderRecents() {
+      console.log('Rendering recent lists');
       const listA = el('#recentAchats');
       const listV = el('#recentVentes');
       const listDep = el('#recentDepenses');
@@ -995,6 +1013,7 @@
 
     // Sorting (same logic)
     function sortTable(type, field, dir) {
+      console.log(`Sorting ${type} by ${field}, direction: ${dir}`);
       const filteredRecords = records.filter(r => r.record_type === type);
       filteredRecords.sort((a, b) => {
         let va = a[field], vb = b[field];
@@ -1012,6 +1031,7 @@
 
     // Table renders
     function renderTableAchats() {
+      console.log('Rendering Achats table');
       const body = el('#achatBody');
       const q = el('#searchAchats').value.trim().toLowerCase();
       const filtered = records.filter(r => r.record_type === 'achat' &&
@@ -1024,6 +1044,7 @@
     }
 
     function renderTableVentes() {
+      console.log('Rendering Ventes table');
       const body = el('#venteBody');
       const q = el('#searchVentes').value.trim().toLowerCase();
       const filtered = records.filter(r => r.record_type === 'vente' &&
@@ -1036,6 +1057,7 @@
     }
 
     function renderTableDepenses() {
+      console.log('Rendering Dépenses table');
       const body = el('#depenseBody');
       const q = el('#searchDepenses').value.trim().toLowerCase();
       const filtered = records.filter(r => r.record_type === 'depense' &&
@@ -1048,6 +1070,7 @@
     }
 
     function renderTableDettes() {
+      console.log('Rendering Dettes table');
       const body = el('#detteBody');
       const q = el('#searchDettes').value.trim().toLowerCase();
       const filtered = records.filter(r => r.record_type === 'dette' &&
@@ -1119,6 +1142,7 @@
 
     function saveEntry(e) {
       e.preventDefault();
+      console.log(`Saving entry for ${formContext}, id: ${editId}`);
       const data = {
         record_type: formContext,
         date: el('#f_date').value,
@@ -1154,6 +1178,7 @@
 
     // Delete (single or multiple) local
     function openConfirmModal(ids, type, isBulk = false) {
+      console.log(`Opening confirm modal for ${type}, ids: ${ids}, isBulk: ${isBulk}`);
       el('#confirmText').textContent = isBulk
         ? `Voulez-vous vraiment supprimer ${ids.length} éléments sélectionnés ? Cette action est irréversible et affectera vos KPIs.`
         : 'Voulez-vous vraiment supprimer cet élément ? Cette action est irréversible et affectera vos KPIs.';
@@ -1162,6 +1187,7 @@
     }
 
     function deleteEntries(ids, type) {
+      console.log(`Deleting entries for ${type}, ids: ${ids}`);
       records = records.filter(r => !ids.includes(Number(r.id)));
       saveToLocal();
       renderAll();
@@ -1170,6 +1196,7 @@
 
     // Export PDF
     function exportPDF(type) {
+      console.log(`Exporting PDF for ${type}`);
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       const filtered = records.filter(r => r.record_type === type);
@@ -1197,6 +1224,7 @@
 
     // Chart (responsive)
     function renderChart() {
+      console.log('Rendering chart');
       const svg = el('#monthlyChart');
       svg.innerHTML = '';
       const months = [...new Set(records.map(r => r.date.slice(0, 7)))].sort();
@@ -1274,6 +1302,7 @@
 
     // Full render
     function renderAll() {
+      console.log('Rendering all sections');
       renderKPIs();
       renderRecents();
       renderChart();
