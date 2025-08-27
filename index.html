@@ -9,9 +9,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
-  <!-- jsPDF -->
+  <!-- jsPDF + autoTable -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- jsPDF AutoTable (pour tables PDF bien formatées) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
   <script>
@@ -25,8 +24,16 @@
             red: {500:'#ef4444',600:'#dc2626'},
             purple: {500:'#8b5cf6',600:'#7c3aed'}
           },
-          boxShadow: {glow:'0 10px 30px rgba(26,117,255,0.20), 0 4px 14px rgba(0,0,0,0.08)',glass:'0 10px 30px rgba(16, 74, 165, 0.18), inset 0 1px 0 rgba(255,255,255,0.25)',soft:'0 12px 24px rgba(0,0,0,0.08)',neon:'0 0 20px rgba(26,117,255,0.5), 0 0 40px rgba(255,212,67,0.3)'},
-          fontFamily: {sans:['Inter','Plus Jakarta Sans','system-ui','ui-sans-serif','Segoe UI','Roboto','Helvetica','Arial','sans-serif'],display:['Space Grotesk','Inter','sans-serif']}
+          boxShadow: {
+            glow:'0 10px 30px rgba(26,117,255,0.20), 0 4px 14px rgba(0,0,0,0.08)',
+            glass:'0 10px 30px rgba(16, 74, 165, 0.18), inset 0 1px 0 rgba(255,255,255,0.25)',
+            soft:'0 12px 24px rgba(0,0,0,0.08)',
+            neon:'0 0 20px rgba(26,117,255,0.5), 0 0 40px rgba(255,212,67,0.3)'
+          },
+          fontFamily: {
+            sans: ['Inter','Plus Jakarta Sans','system-ui','ui-sans-serif','Segoe UI','Roboto','Helvetica','Arial','sans-serif'],
+            display: ['Space Grotesk','Inter','sans-serif']
+          }
         }
       }
     };
@@ -34,29 +41,36 @@
 
   <style>
     :root { --card-bg: #ffffff; --muted: #94a3b8; }
-    body { background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%); }
-    .card { background: var(--card-bg); border-radius: 14px; box-shadow: var(--shadow, 0 6px 18px rgba(16,74,165,0.06)); }
+    html,body { height:100%; }
+    body { background: linear-gradient(180deg,#f8fafc 0%,#ffffff 100%); margin:0; padding:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; color: #111827; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; overflow-x:hidden; }
+    .card { background: var(--card-bg); border-radius:14px; box-shadow: var(--shadow, 0 6px 18px rgba(16,74,165,0.06)); }
     .nav-active { background: linear-gradient(90deg, rgba(26,117,255,0.08), rgba(255,212,67,0.08)); border-color: rgba(26,117,255,0.08); }
     .glow-ring { box-shadow: 0 6px 18px rgba(26,117,255,0.06); }
     .row-odd { background: rgba(250,250,250,0.8); }
     .row-even { background: transparent; }
 
-    /* Make KPI area wider on large screens */
-    @media (min-width: 1024px) {
-      #dashboardWide { width: calc(100vw - 340px); margin-left: 20px; max-width: none; }
-    }
-    @media (max-width: 1023px) {
-      #dashboardWide { width: auto; max-width: 100%; margin-left: 0; padding-left: 0; }
-    }
+    /* Prevent horizontal scrollbar - tables will wrap */
+    table { width:100%; table-layout:auto; border-collapse:collapse; }
+    th, td { word-break:break-word; white-space:normal; vertical-align:middle; }
+    td[data-label] { min-width: 0; }
 
-    @media (max-width: 640px) {
-      .chart-label { font-size: 10px; }
-      header .card { padding: 0.25rem; }
-      #modalOverlay .card { margin: 1rem; }
+    /* Modal positioning and scroll */
+    .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(17,24,39,0.6); z-index:50; }
+    .modal-wrap { position:relative; max-width:760px; margin: 48px auto; max-height: calc(100vh - 120px); overflow:auto; border-radius:14px; background:#fff; }
+    .modal-visible { display:block; z-index:60; }
+    .modal-inner { position:relative; top:8vh; margin-bottom:8vh; }
+
+    /* small screens */
+    @media (max-width:640px) {
+      #sidebar { left: -320px; }
+      .modal-wrap { margin: 12px; max-width: calc(100% - 24px); }
+      .modal-inner { top:2vh; }
+      .chart-label { font-size:10px; }
+      .grid-cols-4 { grid-template-columns: repeat(1, minmax(0,1fr)); }
     }
   </style>
 </head>
-<body class="font-sans text-ink-800 antialiased">
+<body>
   <div class="min-h-screen flex">
     <!-- Sidebar -->
     <aside id="sidebar" class="w-[300px] shrink-0 fixed sm:static inset-y-0 -left-[320px] sm:left-0 transition-all duration-300 z-40 bg-transparent">
@@ -64,7 +78,7 @@
         <div class="px-6 pt-6">
           <div class="card" style="--shadow: 0 10px 30px rgba(26,117,255,0.12), 0 4px 14px rgba(0,0,0,0.06)">
             <div class="p-5 flex items-center gap-3">
-              <img src="nbbcl.png" alt="logo" style="width: 70px; height: auto;">
+              <img src="nbbcl.png" alt="logo" style="width:70px;height:auto;">
               <div>
                 <div class="font-display text-xl font-bold tracking-tight text-primary-800">NBBC Gestion</div>
                 <div class="text-xs text-ink-700/60">New Boss Business Center</div>
@@ -75,44 +89,22 @@
 
         <nav class="p-4 flex-1 overflow-y-auto">
           <ul class="space-y-2">
-            <li><button data-target="dashboard" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent">
-                <span class="h-9 w-9 rounded-lg bg-primary-500/10 text-primary-600 flex items-center justify-center shadow-glow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 13h8V3H3v10Zm10 8h8V3h-8v18ZM3 21h8v-6H3v6Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
-                <span class="font-semibold">Dashboard Central</span>
-              </button></li>
-
-            <li><button data-target="achats" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent">
-                <span class="h-9 w-9 rounded-lg bg-accent-500/15 text-ink-800 flex items-center justify-center shadow-glow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6h12l-1 12H7L6 6Zm2 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                <span class="font-semibold">Gestion Achats</span>
-              </button></li>
-
-            <li><button data-target="ventes" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent">
-                <span class="h-9 w-9 rounded-lg bg-primary-500/12 text-primary-600 flex items-center justify-center shadow-glow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 15l4 4 12-12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                <span class="font-semibold">Gestion Ventes</span>
-              </button></li>
-
-            <li><button data-target="depenses" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent">
-                <span class="h-9 w-9 rounded-lg bg-red-500/10 text-red-600 flex items-center justify-center shadow-glow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14m-7-7l7 7 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                <span class="font-semibold">Gestion Dépenses</span>
-              </button></li>
-
-            <li><button data-target="dettes" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent">
-                <span class="h-9 w-9 rounded-lg bg-purple-500/10 text-purple-600 flex items-center justify-center shadow-glow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                <span class="font-semibold">Gestion Dettes</span>
-              </button></li>
-
-            <li><button data-target="depots" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent">
-                <span class="h-9 w-9 rounded-lg bg-yellow-100 text-amber-600 flex items-center justify-center shadow-glow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 6H8v4h8V6z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                <span class="font-semibold">Gestion dépôt/retrait (flooz/mux)</span>
-              </button></li>
+            <li><button data-target="dashboard" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent"><span class="h-9 w-9 rounded-lg bg-primary-500/10 text-primary-600 flex items-center justify-center shadow-glow">▣</span><span class="font-semibold">Dashboard Central</span></button></li>
+            <li><button data-target="achats" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent"><span class="h-9 w-9 rounded-lg bg-accent-500/15 text-ink-800 flex items-center justify-center shadow-glow">🧾</span><span class="font-semibold">Gestion Achats</span></button></li>
+            <li><button data-target="ventes" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent"><span class="h-9 w-9 rounded-lg bg-primary-500/12 text-primary-600 flex items-center justify-center shadow-glow">✓</span><span class="font-semibold">Gestion Ventes</span></button></li>
+            <li><button data-target="depenses" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent"><span class="h-9 w-9 rounded-lg bg-red-500/10 text-red-600 flex items-center justify-center shadow-glow">⬇</span><span class="font-semibold">Gestion Dépenses</span></button></li>
+            <li><button data-target="dettes" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent"><span class="h-9 w-9 rounded-lg bg-purple-500/10 text-purple-600 flex items-center justify-center shadow-glow">⏺</span><span class="font-semibold">Gestion Dettes</span></button></li>
+            <li><button data-target="depots" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent"><span class="h-9 w-9 rounded-lg bg-yellow-100 text-amber-600 flex items-center justify-center shadow-glow">💼</span><span class="font-semibold">Gestion dépôt/retrait</span></button></li>
+            <li><button data-target="comptes" class="nav-link glow-ring w-full flex items-center gap-3 px-4 py-3 rounded-xl text-ink-700 hover:text-primary-700 transition border border-transparent"><span class="h-9 w-9 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center shadow-glow">⚖</span><span class="font-semibold">Gestion de compte</span></button></li>
           </ul>
 
           <div class="mt-8 pt-6">
             <div class="grid grid-cols-2 gap-3">
-              <button id="quickAddAchat" class="glow-ring active rounded-xl px-3 py-2.5 bg-white text-primary-700 border border-primary-200 font-semibold shadow-neon hover:shadow-soft transition animation-pulseGlow text-xs sm:text-sm">+ Nouvel Achat</button>
-              <button id="quickAddVente" class="glow-ring rounded-xl px-3 py-2.5 bg-gradient-to-br from-accent-500 to-yellow-300 text-ink-800 font-extrabold shadow-neon hover:brightness-105 transition animation-pulseGlow text-xs sm:text-sm">+ Nouvelle Vente</button>
-              <button id="quickAddDepense" class="glow-ring active rounded-xl px-3 py-2.5 bg-white text-red-700 border border-red-200 font-semibold shadow-neon hover:shadow-soft transition animation-pulseGlow text-xs sm:text-sm">+ Nouvelle Dépense</button>
-              <button id="quickAddDette" class="glow-ring rounded-xl px-3 py-2.5 bg-gradient-to-br from-purple-500 to-purple-300 text-ink-800 font-extrabold shadow-neon hover:brightness-105 transition animation-pulseGlow text-xs sm:text-sm">+ Nouvelle Dette</button>
-              <button id="quickAddDepot" class="glow-ring rounded-xl px-3 py-2.5 bg-gradient-to-br from-amber-400 to-yellow-200 text-ink-800 font-extrabold shadow-neon hover:brightness-105 transition animation-pulseGlow text-xs sm:text-sm">+ Nouveau dépôt/retrait (flooz/mux)</button>
+              <button id="quickAddAchat" class="glow-ring rounded-xl px-3 py-2.5 bg-white text-primary-700 border border-primary-200 font-semibold shadow-neon hover:shadow-soft text-xs sm:text-sm">+ Nouvel Achat</button>
+              <button id="quickAddVente" class="glow-ring rounded-xl px-3 py-2.5 bg-gradient-to-br from-accent-500 to-yellow-300 text-ink-800 font-extrabold shadow-neon hover:brightness-105 text-xs sm:text-sm">+ Nouvelle Vente</button>
+              <button id="quickAddDepense" class="glow-ring rounded-xl px-3 py-2.5 bg-white text-red-700 border border-red-200 font-semibold shadow-neon hover:shadow-soft text-xs sm:text-sm">+ Nouvelle Dépense</button>
+              <button id="quickAddDette" class="glow-ring rounded-xl px-3 py-2.5 bg-gradient-to-br from-purple-500 to-purple-300 text-ink-800 font-extrabold shadow-neon hover:brightness-105 text-xs sm:text-sm">+ Nouvelle Dette</button>
+              <button id="quickAddDepot" class="glow-ring rounded-xl px-3 py-2.5 bg-gradient-to-br from-amber-400 to-yellow-200 text-ink-800 font-extrabold shadow-neon hover:brightness-105 text-xs sm:text-sm">+ Nouveau dépôt/retrait</button>
             </div>
           </div>
         </nav>
@@ -130,87 +122,30 @@
               <div class="text-xs text-ink-700/60">Vue d'ensemble</div>
             </div>
           </div>
-
-          <div class="hidden sm:flex items-center gap-3">
-            <!-- optional header controls on wide screens -->
-          </div>
         </div>
       </header>
 
-      <section id="dashboardWide" class="mx-4 sm:mx-6 py-8 space-y-10" style="max-width: none;">
-        <!-- DASHBOARD -->
+      <section id="dashboardWide" class="mx-4 sm:mx-6 py-8 space-y-10" style="max-width:none;">
+        <!-- KPI & Chart -->
         <div id="dashboardSection" class="section">
           <div class="grid lg:grid-cols-4 sm:grid-cols-2 grid-cols-1 gap-5">
-            <div class="card animation-pulseGlow">
-              <div class="p-5">
-                <div class="flex items-center justify-between">
-                  <div class="text-ink-700/70 text-sm">Chiffre d’affaires</div>
-                  <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-500/10 text-primary-600 shadow-glow">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 14l4 4 12-12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  </span>
-                </div>
-                <div class="mt-3 font-display text-2xl font-bold text-ink-800" id="kpiCA">—</div>
-                <div class="mt-2 text-xs text-ink-700/60" id="kpiCAInfo">Basé sur ventes - achats | Taux de croissance: —</div>
-              </div>
-            </div>
+            <div class="card"><div class="p-5"><div class="flex items-center justify-between"><div class="text-ink-700/70 text-sm">Chiffre d’affaires</div><span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-500/10 text-primary-600 shadow-glow">✓</span></div><div class="mt-3 font-display text-2xl font-bold text-ink-800" id="kpiCA">—</div><div class="mt-2 text-xs text-ink-700/60" id="kpiCAInfo">Basé sur ventes - achats | Taux de croissance: —</div></div></div>
 
-            <div class="card animation-pulseGlow">
-              <div class="p-5">
-                <div class="flex items-center justify-between">
-                  <div class="text-ink-700/70 text-sm">Total Achats</div>
-                  <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-accent-500/15 text-ink-800 shadow-glow">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6h12l-1 12H7L6 6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-                  </span>
-                </div>
-                <div class="mt-3 font-display text-2xl font-bold text-ink-800" id="kpiAchats">—</div>
-                <div class="mt-2 text-xs text-ink-700/60">Coûts cumulés | Moyenne par achat: —</div>
-              </div>
-            </div>
+            <div class="card"><div class="p-5"><div class="flex items-center justify-between"><div class="text-ink-700/70 text-sm">Total Achats</div><span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-accent-500/15 text-ink-800 shadow-glow">🧾</span></div><div class="mt-3 font-display text-2xl font-bold text-ink-800" id="kpiAchats">—</div><div class="mt-2 text-xs text-ink-700/60">Coûts cumulés | Moyenne par achat: —</div></div></div>
 
-            <div class="card animation-pulseGlow">
-              <div class="p-5">
-                <div class="flex items-center justify-between">
-                  <div class="text-ink-700/70 text-sm">Bénéfice estimé</div>
-                  <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-accent-500/15 text-ink-800 shadow-glow">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  </span>
-                </div>
-                <div class="mt-3 font-display text-2xl font-bold text-ink-800" id="kpiBenefice">—</div>
-                <div class="mt-2 text-xs text-ink-700/60" id="kpiBeneficeInfo">—</div>
-              </div>
-            </div>
+            <div class="card"><div class="p-5"><div class="flex items-center justify-between"><div class="text-ink-700/70 text-sm">Bénéfice estimé</div><span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-accent-500/15 text-ink-800 shadow-glow">⚖</span></div><div class="mt-3 font-display text-2xl font-bold text-ink-800" id="kpiBenefice">—</div><div class="mt-2 text-xs text-ink-700/60" id="kpiBeneficeInfo">—</div></div></div>
 
-            <div class="card animation-pulseGlow">
-              <div class="p-5">
-                <div class="flex items-center justify-between">
-                  <div class="text-ink-700/70 text-sm">Total Dépenses</div>
-                  <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/10 text-red-600 shadow-glow">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6h12l-1 12H7L6 6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-                  </span>
-                </div>
-                <div class="mt-3 font-display text-2xl font-bold text-ink-800" id="kpiDepenses">—</div>
-                <div class="mt-2 text-xs text-ink-700/60">Dépenses cumulées | Moyenne par dépense: —</div>
-              </div>
-            </div>
+            <div class="card"><div class="p-5"><div class="flex items-center justify-between"><div class="text-ink-700/70 text-sm">Total Dépenses</div><span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/10 text-red-600 shadow-glow">⬇</span></div><div class="mt-3 font-display text-2xl font-bold text-ink-800" id="kpiDepenses">—</div><div class="mt-2 text-xs text-ink-700/60">Dépenses cumulées | Moyenne par dépense: —</div></div></div>
           </div>
 
-          <div class="card mt-6">
-            <div class="p-5">
-              <h3 class="font-semibold text-ink-800 mb-4">Évolution Mensuelle (Achats, Dépenses vs Ventes, Dettes)</h3>
-              <svg id="monthlyChart" width="100%" height="300" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet"></svg>
-              <div class="mt-4 text-xs text-ink-700/60">Données basées sur les enregistrements. Bleu: Achats, Rouge: Dépenses, Jaune: Ventes, Violet: Dettes.</div>
-            </div>
-          </div>
+          <div class="card mt-6"><div class="p-5"><h3 class="font-semibold text-ink-800 mb-4">Évolution Mensuelle (Achats, Dépenses vs Ventes, Dettes)</h3><svg id="monthlyChart" width="100%" height="300" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet"></svg><div class="mt-4 text-xs text-ink-700/60">Données basées sur les enregistrements. Bleu: Achats, Rouge: Dépenses, Jaune: Ventes, Violet: Dettes.</div></div></div>
         </div>
 
-        <!-- ACHATS SECTION -->
+        <!-- ACHATS -->
         <div id="achatsSection" class="section hidden">
           <div class="card">
             <div class="p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-4 md:justify-between">
-              <div class="flex items-center gap-3">
-                <div class="text-lg font-semibold text-ink-800">Achats Enregistrés</div>
-                <span class="text-xs text-ink-700/60 hidden sm:inline" id="achatCount">—</span>
-              </div>
+              <div class="flex items-center gap-3"><div class="text-lg font-semibold text-ink-800">Achats Enregistrés</div><span class="text-xs text-ink-700/60 hidden sm:inline" id="achatCount">—</span></div>
               <div class="flex flex-wrap items-center gap-2">
                 <div class="flex items-center gap-2 bg-white border border-primary-100 rounded-xl px-3 py-2 glow-ring">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="text-ink-700/60"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -230,8 +165,8 @@
                     <th class="px-4 py-3" data-sort="date">Date</th>
                     <th class="px-4 py-3" data-sort="item">Article</th>
                     <th class="px-4 py-3" data-sort="qty">Quantité</th>
-                    <th class="px-4 py-3" data-sort="price">Prix Unitaire (FCFA)</th>
-                    <th class="px-4 py-3" data-sort="party">Fournisseur</th>
+                    <th class="px-4 py-3" data-sort="price">Prix Unitaire</th>
+                    <th class="px-4 py-3" data-sort="account">Compte</th>
                     <th class="px-4 py-3 text-right" data-sort="total">Total (FCFA)</th>
                     <th class="px-4 py-3 text-right">Actions</th>
                   </tr>
@@ -249,7 +184,6 @@
           </div>
         </div>
 
-        <!-- VENTES, DEPENSES, DETTES, DEPOTS similar (kept unchanged) -->
         <!-- VENTES -->
         <div id="ventesSection" class="section hidden">
           <div class="card">
@@ -265,23 +199,29 @@
                 <button id="exportVentes" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 px-4 py-2.5 hover:bg-primary-50/50 transition glow-ring">Exporter PDF Ventes</button>
               </div>
             </div>
+
             <div class="p-5 overflow-auto">
               <table class="w-full border-collapse">
-                <thead><tr class="text-left text-xs text-ink-700/60">
-                  <th class="px-4 py-3"><input id="selectAllVentes" type="checkbox"></th>
-                  <th class="px-4 py-3" data-sort="date">Date</th>
-                  <th class="px-4 py-3" data-sort="item">Article</th>
-                  <th class="px-4 py-3" data-sort="qty">Quantité</th>
-                  <th class="px-4 py-3" data-sort="price">Prix Unitaire (FCFA)</th>
-                  <th class="px-4 py-3" data-sort="party">Client</th>
-                  <th class="px-4 py-3 text-right" data-sort="total">Total (FCFA)</th>
-                  <th class="px-4 py-3 text-right">Actions</th>
-                </tr></thead>
+                <thead>
+                  <tr class="text-left text-xs text-ink-700/60">
+                    <th class="px-4 py-3"><input id="selectAllVentes" type="checkbox"></th>
+                    <th class="px-4 py-3" data-sort="date">Date</th>
+                    <th class="px-4 py-3" data-sort="item">Article</th>
+                    <th class="px-4 py-3" data-sort="qty">Quantité</th>
+                    <th class="px-4 py-3" data-sort="price">Prix Unitaire</th>
+                    <th class="px-4 py-3" data-sort="account">Compte</th>
+                    <th class="px-4 py-3 text-right" data-sort="total">Total (FCFA)</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
                 <tbody id="venteBody" class="divide-y divide-primary-50 bg-white"></tbody>
-                <tfoot><tr class="bg-primary-50">
-                  <td colspan="6" class="px-4 py-3 text-right font-semibold">Total Ventes</td>
-                  <td class="px-4 py-3 text-right font-bold" id="totalVentes">—</td><td></td>
-                </tr></tfoot>
+                <tfoot>
+                  <tr class="bg-primary-50">
+                    <td colspan="6" class="px-4 py-3 text-right font-semibold">Total Ventes</td>
+                    <td class="px-4 py-3 text-right font-bold" id="totalVentes">—</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
@@ -302,23 +242,29 @@
                 <button id="exportDepenses" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 px-4 py-2.5 hover:bg-primary-50/50 transition glow-ring">Exporter PDF Dépenses</button>
               </div>
             </div>
+
             <div class="p-5 overflow-auto">
               <table class="w-full border-collapse">
-                <thead><tr class="text-left text-xs text-ink-700/60">
-                  <th class="px-4 py-3"><input id="selectAllDepenses" type="checkbox"></th>
-                  <th class="px-4 py-3" data-sort="date">Date</th>
-                  <th class="px-4 py-3" data-sort="item">Description</th>
-                  <th class="px-4 py-3" data-sort="qty">Quantité</th>
-                  <th class="px-4 py-3" data-sort="price">Prix Unitaire (FCFA)</th>
-                  <th class="px-4 py-3" data-sort="party">Bénéficiaire</th>
-                  <th class="px-4 py-3 text-right" data-sort="total">Total (FCFA)</th>
-                  <th class="px-4 py-3 text-right">Actions</th>
-                </tr></thead>
+                <thead>
+                  <tr class="text-left text-xs text-ink-700/60">
+                    <th class="px-4 py-3"><input id="selectAllDepenses" type="checkbox"></th>
+                    <th class="px-4 py-3" data-sort="date">Date</th>
+                    <th class="px-4 py-3" data-sort="item">Description</th>
+                    <th class="px-4 py-3" data-sort="qty">Quantité</th>
+                    <th class="px-4 py-3" data-sort="price">Prix Unitaire</th>
+                    <th class="px-4 py-3" data-sort="account">Compte</th>
+                    <th class="px-4 py-3 text-right" data-sort="total">Total (FCFA)</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
                 <tbody id="depenseBody" class="divide-y divide-primary-50 bg-white"></tbody>
-                <tfoot><tr class="bg-primary-50">
-                  <td colspan="6" class="px-4 py-3 text-right font-semibold">Total Dépenses</td>
-                  <td class="px-4 py-3 text-right font-bold" id="totalDepenses">—</td><td></td>
-                </tr></tfoot>
+                <tfoot>
+                  <tr class="bg-primary-50">
+                    <td colspan="6" class="px-4 py-3 text-right font-semibold">Total Dépenses</td>
+                    <td class="px-4 py-3 text-right font-bold" id="totalDepenses">—</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
@@ -339,23 +285,29 @@
                 <button id="exportDettes" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 px-4 py-2.5 hover:bg-primary-50/50 transition glow-ring">Exporter PDF Dettes</button>
               </div>
             </div>
+
             <div class="p-5 overflow-auto">
               <table class="w-full border-collapse">
-                <thead><tr class="text-left text-xs text-ink-700/60">
-                  <th class="px-4 py-3"><input id="selectAllDettes" type="checkbox"></th>
-                  <th class="px-4 py-3" data-sort="date">Date</th>
-                  <th class="px-4 py-3" data-sort="item">Description</th>
-                  <th class="px-4 py-3" data-sort="qty">Quantité</th>
-                  <th class="px-4 py-3" data-sort="price">Prix Unitaire (FCFA)</th>
-                  <th class="px-4 py-3" data-sort="party">Créancier</th>
-                  <th class="px-4 py-3 text-right" data-sort="total">Total (FCFA)</th>
-                  <th class="px-4 py-3 text-right">Actions</th>
-                </tr></thead>
+                <thead>
+                  <tr class="text-left text-xs text-ink-700/60">
+                    <th class="px-4 py-3"><input id="selectAllDettes" type="checkbox"></th>
+                    <th class="px-4 py-3" data-sort="date">Date</th>
+                    <th class="px-4 py-3" data-sort="item">Description</th>
+                    <th class="px-4 py-3" data-sort="qty">Quantité</th>
+                    <th class="px-4 py-3" data-sort="price">Prix Unitaire</th>
+                    <th class="px-4 py-3" data-sort="account">Créancier / Compte</th>
+                    <th class="px-4 py-3 text-right" data-sort="total">Total (FCFA)</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
                 <tbody id="detteBody" class="divide-y divide-primary-50 bg-white"></tbody>
-                <tfoot><tr class="bg-primary-50">
-                  <td colspan="6" class="px-4 py-3 text-right font-semibold">Total Dettes</td>
-                  <td class="px-4 py-3 text-right font-bold" id="totalDettes">—</td><td></td>
-                </tr></tfoot>
+                <tfoot>
+                  <tr class="bg-primary-50">
+                    <td colspan="6" class="px-4 py-3 text-right font-semibold">Total Dettes</td>
+                    <td class="px-4 py-3 text-right font-bold" id="totalDettes">—</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
@@ -365,35 +317,87 @@
         <div id="depotsSection" class="section hidden">
           <div class="card">
             <div class="p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-4 md:justify-between">
-              <div class="flex items-center gap-3"><div class="text-lg font-semibold text-ink-800">Dépôts / Retraits (flooz/mux)</div><span class="text-xs text-ink-700/60 hidden sm:inline" id="depotCount">—</span></div>
+              <div class="flex items-center gap-3"><div class="text-lg font-semibold text-ink-800">Dépôts / Retraits</div><span class="text-xs text-ink-700/60 hidden sm:inline" id="depotCount">—</span></div>
               <div class="flex flex-wrap items-centered gap-2">
                 <div class="flex items-center gap-2 bg-white border border-primary-100 rounded-xl px-3 py-2 glow-ring">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="text-ink-700/60"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-                  <input id="searchDepots" type="text" placeholder="Rechercher dépôt/retrait (type, opérateur, date, méthode)." class="outline-none text-sm placeholder-ink-700/50 w-48 md:w-64">
+                  <input id="searchDepots" type="text" placeholder="Rechercher dépôt/retrait (type, opérateur, date, compte)." class="outline-none text-sm placeholder-ink-700/50 w-48 md:w-64">
                 </div>
                 <button id="addDepot" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-300 text-ink-800 font-extrabold px-4 py-2.5 shadow-neon hover:brightness-105 transition glow-ring">Ajouter Dépôt/Retrait</button>
                 <button id="deleteSelectedDepots" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 font-semibold px-4 py-2.5 hover:bg-primary-50/50 transition disabled:opacity-50 glow-ring" disabled>Supprimer Sélectionnés</button>
                 <button id="exportDepots" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 px-4 py-2.5 hover:bg-primary-50/50 transition glow-ring">Exporter PDF Dépôts</button>
               </div>
             </div>
+
             <div class="p-5 overflow-auto">
               <table class="w-full border-collapse">
-                <thead><tr class="text-left text-xs text-ink-700/60">
-                  <th class="px-4 py-3"><input id="selectAllDepots" type="checkbox"></th>
-                  <th class="px-4 py-3" data-sort="date">Date</th>
-                  <th class="px-4 py-3" data-sort="item">Type (Dépôt/Retrait)</th>
-                  <th class="px-4 py-3" data-sort="qty">Quantité</th>
-                  <th class="px-4 py-3" data-sort="price">Montant (FCFA)</th>
-                  <th class="px-4 py-3" data-sort="method">Méthode</th>
-                  <th class="px-4 py-3" data-sort="party">Opérateur / Compte</th>
-                  <th class="px-4 py-3 text-right" data-sort="total">Total (FCFA)</th>
-                  <th class="px-4 py-3 text-right">Actions</th>
-                </tr></thead>
+                <thead>
+                  <tr class="text-left text-xs text-ink-700/60">
+                    <th class="px-4 py-3"><input id="selectAllDepots" type="checkbox"></th>
+                    <th class="px-4 py-3" data-sort="date">Date</th>
+                    <th class="px-4 py-3" data-sort="item">Type</th>
+                    <th class="px-4 py-3" data-sort="qty">Quantité</th>
+                    <th class="px-4 py-3" data-sort="price">Montant</th>
+                    <th class="px-4 py-3" data-sort="debit">Compte débit</th>
+                    <th class="px-4 py-3" data-sort="credit">Compte crédit</th>
+                    <th class="px-4 py-3 text-right" data-sort="total">Total (FCFA)</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
                 <tbody id="depotBody" class="divide-y divide-primary-50 bg-white"></tbody>
-                <tfoot><tr class="bg-primary-50">
-                  <td colspan="7" class="px-4 py-3 text-right font-semibold">Total Dépôts/Retraits</td>
-                  <td class="px-4 py-3 text-right font-bold" id="totalDepots">—</td><td></td>
-                </tr></tfoot>
+                <tfoot>
+                  <tr class="bg-primary-50">
+                    <td colspan="7" class="px-4 py-3 text-right font-semibold">Total Dépôts/Retraits</td>
+                    <td class="px-4 py-3 text-right font-bold" id="totalDepots">—</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- COMPTES -->
+        <div id="comptesSection" class="section hidden">
+          <div class="card">
+            <div class="p-5 flex flex-col md:flex-row md:items-center gap-3 md:gap-4 md:justify-between">
+              <div class="flex items-center gap-3"><div class="text-lg font-semibold text-ink-800">Gestion des comptes (libellés)</div><span class="text-xs text-ink-700/60 hidden sm:inline" id="compteCount">—</span></div>
+              <div class="flex items-center gap-2">
+                <button id="addCompte" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 text-white font-semibold px-4 py-2.5 shadow-neon hover:brightness-105 transition glow-ring">+ Nouveau libellé</button>
+                <button id="resetAllComptes" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 px-4 py-2.5 hover:bg-primary-50/50 transition glow-ring">Réinitialiser tous à 0</button>
+                <!-- <button id="forceRebuildBtn" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 px-4 py-2.5 hover:bg-primary-50/50 transition glow-ring">Forcer reconstruction</button>-->
+                
+                <button id="exportComptes" class="inline-flex items-center gap-2 rounded-xl bg-white text-ink-800 border border-primary-100 px-4 py-2.5 hover:bg-primary-50/50 transition glow-ring">Exporter PDF Comptes</button>
+              </div>
+            </div>
+
+            <div class="p-5 overflow-auto">
+              <table class="w-full border-collapse">
+                <thead>
+                  <tr class="text-left text-xs text-ink-700/60">
+                    <th class="px-4 py-3">Libellé</th>
+                    <th class="px-4 py-3">Devise</th>
+                    <th class="px-4 py-3">Taux (1 unité → FCFA)</th>
+                    <th class="px-4 py-3 text-right">Solde (FCFA)</th>
+                    <th class="px-4 py-3 text-right">Equiv. (unités)</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="comptesBody" class="divide-y divide-primary-50 bg-white"></tbody>
+                <tfoot>
+                  <tr class="bg-primary-50">
+                    <td colspan="3" class="px-4 py-3 text-right font-semibold">Total Disponible</td>
+                    <td class="px-4 py-3 text-right font-bold" id="totalCapital">—</td>
+                    <td></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td colspan="6" class="px-4 py-2 text-xs text-ink-700/70">
+                      <strong>Formule : </strong>TotalComptes + Bénéfice - Dépenses - Dettes<br>
+                      <span id="accountsFormulaInfo">Bénéfice calculé = (Prix unitaire moyen vente - Prix unitaire moyen achat) × Qté vendue</span>
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
@@ -402,16 +406,13 @@
       </section>
     </main>
 
-    <!-- Modal (formulaire unique pour tous les types) -->
-    <div id="modalOverlay" class="fixed inset-0 z-50 hidden">
-      <div class="absolute inset-0 bg-ink-800/50"></div>
-      <div class="relative max-w-lg mx-auto mt-16 sm:mt-24">
-        <div class="card">
+    <!-- Entry Modal -->
+    <div id="modalOverlay" class="modal-backdrop">
+      <div class="modal-inner">
+        <div class="modal-wrap card">
           <div class="px-6 py-4 flex items-center justify-between border-b border-primary-100">
             <h3 id="modalTitle" class="font-semibold text-ink-800">Nouvel enregistrement</h3>
-            <button id="closeModal" class="h-9 w-9 rounded-lg bg-white border border-primary-100 text-ink-800 hover:bg-primary-50/50">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="inline"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-            </button>
+            <button id="closeModal" class="h-9 w-9 rounded-lg bg-white border border-primary-100 text-ink-800 hover:bg-primary-50/50">✕</button>
           </div>
 
           <form id="entryForm" class="p-6 space-y-4">
@@ -419,40 +420,56 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="text-sm text-ink-700/70">Date</label>
-                <input required type="date" id="f_date" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-200 bg-white">
-              </div>
-              <div>
-                <label id="f_item_label" class="text-sm text-ink-700/70">Article</label>
-                <input required type="text" id="f_item" placeholder="Nom de l’article (ex: Ordinateur Portable)" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-200 bg-white">
-              </div>
-              <div>
-                <label class="text-sm text-ink-700/70">Quantité</label>
-                <input required min="1" type="number" id="f_qty" placeholder="1 ou plus" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-200 bg-white">
-              </div>
-              <div>
-                <label class="text-sm text-ink-700/70" id="f_price_label">Prix Unitaire (FCFA)</label>
-                <input required type="number" id="f_price" placeholder="0" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-200 bg-white">
+                <input required type="date" id="f_date" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 bg-white">
               </div>
 
               <div>
-                <label class="text-sm text-ink-700/70">Méthode</label>
-                <select id="f_method" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-200 bg-white">
-                  <option value="flooz">Flooz</option>
-                  <option value="mux">Mux</option>
-                  <option value="tmoney">Tmoney</option>
-                  <option value="autre">Autre</option>
+                <label id="f_item_label" class="text-sm text-ink-700/70">Article</label>
+                <div class="mt-1 flex gap-2">
+                  <select id="f_item_type" class="rounded-xl border border-primary-100 px-3 py-2 w-40">
+                    <option value="Dollar">Dollar</option>
+                    <option value="Autre">Autre</option>
+                  </select>
+                  <input id="f_item_custom" type="text" placeholder="Si Autre, préciser..." class="rounded-xl border border-primary-100 px-3 py-2 flex-1 hidden">
+                </div>
+              </div>
+
+              <div>
+                <label class="text-sm text-ink-700/70">Quantité</label>
+                <input required min="0" type="number" id="f_qty" placeholder="1 ou plus" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 bg-white">
+              </div>
+
+              <div>
+                <label id="f_price_label" class="text-sm text-ink-700/70">Prix Unitaire (FCFA)</label>
+                <input required type="number" id="f_price" placeholder="0" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 bg-white">
+              </div>
+
+              <div>
+                <label class="text-sm text-ink-700/70">Devise transaction</label>
+                <select id="f_txcurrency" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 bg-white">
+                  <option value="FCFA">FCFA</option>
                 </select>
               </div>
 
               <div>
+                <label id="f_debit_label" class="text-sm text-ink-700/70">Compte / Libellé débit</label>
+                <select id="f_debit_account" required class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 bg-white"></select>
+              </div>
+
+              <div>
+                <label id="f_credit_label" class="text-sm text-ink-700/70">Compte / Libellé credit</label>
+                <select id="f_credit_account" required class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 bg-white"></select>
+              </div>
+
+              <div>
                 <label id="f_party_label" class="text-sm text-ink-700/70">Fournisseur / Client</label>
-                <input required type="text" id="f_party" placeholder="Nom du fournisseur, client, compte, opérateur..." class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-200 bg-white">
+                <input required type="text" id="f_party" placeholder="Nom du fournisseur, client, compte, opérateur..." class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 bg-white">
               </div>
             </div>
 
             <div>
               <label class="text-sm text-ink-700/70">Note (optionnel)</label>
-              <textarea id="f_note" rows="3" placeholder="Remarques..." class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 outline-none focus:ring-2 focus:ring-primary-200 bg-white"></textarea>
+              <textarea id="f_note" rows="3" placeholder="Remarques..." class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2 bg-white"></textarea>
             </div>
 
             <div id="formError" class="text-red-600 text-sm hidden">Veuillez remplir correctement les champs requis.</div>
@@ -466,17 +483,83 @@
       </div>
     </div>
 
-    <!-- Confirm modal -->
-    <div id="confirmOverlay" class="fixed inset-0 z-60 hidden">
-      <div class="absolute inset-0 bg-ink-800/50"></div>
-      <div class="relative max-w-lg mx-auto mt-28">
-        <div class="card">
+    <!-- Compte Modal -->
+    <div id="compteModal" class="modal-backdrop">
+      <div class="modal-inner">
+        <div class="modal-wrap card">
+          <div class="px-6 py-4 flex items-center justify-between border-b border-primary-100">
+            <h3 id="compteModalTitle" class="font-semibold text-ink-800">Nouveau libellé</h3>
+            <button id="closeCompteModal" class="h-9 w-9 rounded-lg bg-white border border-primary-100 text-ink-800 hover:bg-primary-50/50">✕</button>
+          </div>
+          <form id="compteForm" class="p-6 space-y-4">
+            <input type="hidden" id="compte_id">
+            <div>
+              <label class="text-sm text-ink-700/70">Libellé</label>
+              <input required type="text" id="compte_label" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-sm text-ink-700/70">Devise</label>
+                <select id="compte_currency" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2">
+                  <option value="FCFA">FCFA</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="Other">Autre</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-sm text-ink-700/70">Taux (1 unité → FCFA)</label>
+                <input required type="number" id="compte_rate" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2" placeholder="ex: 590">
+              </div>
+            </div>
+            <div>
+              <label class="text-sm text-ink-700/70">Solde initial (unités de la devise)</label>
+              <input type="number" id="compte_balance_units" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2" placeholder="0">
+              <div class="text-xs text-ink-700/60 mt-1">Le solde sera converti et affiché en FCFA.</div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3">
+              <button type="button" id="compteCancel" class="px-4 py-2 rounded-xl border border-primary-100 text-ink-800 hover:bg-primary-50/50">Annuler</button>
+              <button type="submit" id="compteSave" class="px-4 py-2 rounded-xl bg-primary-600 text-white font-semibold hover:brightness-105">Enregistrer</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete compte modal (reassign) -->
+    <div id="deleteCompteModal" class="modal-backdrop">
+      <div class="modal-inner">
+        <div class="modal-wrap card">
+          <div class="px-6 py-4 border-b border-primary-100">
+            <h3 class="font-semibold text-ink-800">Supprimer le libellé</h3>
+          </div>
+          <div class="px-6 py-4 space-y-3">
+            <div id="deleteCompteText" class="text-ink-800">Ce libellé possède des enregistrements. Choisissez une option :</div>
+            <div>
+              <label class="text-sm text-ink-700/70">Réaffecter les enregistrements vers :</label>
+              <select id="reassignTarget" class="mt-1 w-full rounded-xl border border-primary-100 px-3 py-2"></select>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="deleteCompteSetNull"><label for="deleteCompteSetNull" class="text-sm text-ink-700/70">Ou mettre le compte à vide (ne pas réaffecter)</label>
+            </div>
+          </div>
+          <div class="px-6 py-4 flex justify-end gap-3">
+            <button id="deleteCompteCancel" class="px-4 py-2 rounded-xl border border-primary-100 text-ink-800 hover:bg-primary-50/50">Annuler</button>
+            <button id="deleteCompteConfirm" class="px-4 py-2 rounded-xl bg-red-500 text-white font-semibold hover:brightness-105">Supprimer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generic Confirm -->
+    <div id="confirmOverlay" class="modal-backdrop">
+      <div class="modal-inner">
+        <div class="modal-wrap card">
           <div class="px-6 py-4 flex items-center justify-between border-b border-primary-100">
             <h3 class="font-semibold text-ink-800">Confirmer l'Action</h3>
           </div>
-          <div class="px-6 py-4 text-ink-800" id="confirmText">
-            Voulez-vous vraiment supprimer les éléments sélectionnés ? Cette action est irréversible et affectera vos KPIs.
-          </div>
+          <div class="px-6 py-4 text-ink-800" id="confirmText">Voulez-vous vraiment supprimer les éléments sélectionnés ?</div>
           <div class="px-6 py-4 flex items-center justify-end gap-3">
             <button id="confirmCancel" class="px-4 py-2 rounded-xl border border-primary-100 text-ink-800 hover:bg-primary-50/50">Annuler</button>
             <button id="confirmOk" class="px-4 py-2 rounded-xl bg-red-500 text-white font-semibold hover:brightness-105">Confirmer</button>
@@ -488,208 +571,309 @@
   </div>
 
   <script>
-    // ---------------------------
-    // State
-    // ---------------------------
+    /**************************************************************************
+     * NBBC Gestion - Unified single-file app (updated)
+     * - Persist all calculation values (amountFCFA, rateUsed, account.balanceFCFA)
+     * - Adds "Forcer reconstruction" button
+     * - Adds BÉNÉFICE into Total Disponible and deducts Dépenses & Dettes
+     * - Fix: sanitize strings for PDF export to avoid unwanted '/' or bad glyphs
+     **************************************************************************/
+
+    /* --------------------
+       State & storage keys
+       -------------------- */
     let activeSection = 'dashboard';
     let formContext = 'achat';
     let editId = null;
-    let records = []; // array of { id, record_type, date, item, qty, price, party, note, method }
+    let records = []; // records will include: id, record_type, date, item, qty, price, txCurrency, party, note, accountDebitId, accountCreditId, amountFCFA, rateUsed, depotType?
+    let accounts = []; // accounts: id, label, currency, rate, balanceFCFA
 
-    const STORAGE_KEY = 'nbbc_records_v1';
+    const STORAGE_KEY = 'nbbc_records_v2';
+    const STORAGE_ACCOUNTS = 'nbbc_accounts_v2';
+    const DEFAULT_RATE_USD = 590;
 
-    // ---------------------------
-    // Helpers
-    // ---------------------------
-    const el = (sel) => document.querySelector(sel);
-    const els = (sel) => Array.from(document.querySelectorAll(sel));
-    const money = (n) => Number(n || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' FCFA';
+    /* --------------------
+       Helpers
+       -------------------- */
+    const el = sel => document.querySelector(sel);
+    const els = sel => Array.from(document.querySelectorAll(sel));
+    const money = n => Number(n||0).toLocaleString('fr-FR',{minimumFractionDigits:2, maximumFractionDigits:2}) + ' FCFA';
+    const moneySimple = n => Number(n||0).toLocaleString('fr-FR',{minimumFractionDigits:2, maximumFractionDigits:2});
+    function debounce(fn,delay=300){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),delay); }; }
 
-    function debounce(fn, delay) {
-      let timeout;
-      return (...args) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => fn(...args), delay);
-      };
+    // sanitize text for PDF (remove non-breaking spaces that can render oddly)
+    function sanitizeForPdf(s){
+      if (s === null || typeof s === 'undefined') return '';
+      return String(s).replace(/\u202F|\u00A0/g,' ').replace(/\r/g,' ').replace(/\n/g,' ');
     }
 
-    function safeSet(selector, value) {
-      const node = el(selector);
-      if (node) node.textContent = value;
-    }
-
-    function safeOn(selector, event, handler) {
-      const node = el(selector);
-      if (node) node.addEventListener(event, handler);
-    }
-
-    // ---------------------------
-    // Local Storage: load / save
-    // ---------------------------
-    function loadFromLocal() {
+    /* --------------------
+       Local Storage load/save (robust normalization & migration)
+       -------------------- */
+    function loadFromLocal(){
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) {
-          records = [];
-          return;
-        }
-        records = JSON.parse(raw) || [];
-        records = records.map(r => ({ ...r, id: Number(r.id) }));
-      } catch (err) {
-        console.error('Failed to load from localStorage:', err);
-        records = [];
-      }
-    }
+        records = raw ? (JSON.parse(raw) || []) : [];
+        // normalize record fields and ensure numeric types & persisted amountFCFA & rateUsed
+        records = records.map(r => {
+          const rec = { ...r };
+          rec.id = Number(rec.id || Date.now());
+          rec.qty = Number(rec.qty || 0);
+          rec.price = Number(rec.price || 0);
+          rec.txCurrency = rec.txCurrency || 'FCFA';
+          rec.record_type = rec.record_type || 'achat';
+          // ensure rateUsed and amountFCFA are present
+          if (!rec.rateUsed) rec.rateUsed = getPreferredRate(rec.txCurrency, rec.date);
+          if (!rec.amountFCFA) rec.amountFCFA = computeAmountFCFA(rec.txCurrency, rec.qty * rec.price, rec.rateUsed);
+          return rec;
+        });
+      } catch(e){ console.error('load records err', e); records = []; }
 
-    function saveToLocal() {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-      } catch (err) {
-        console.error('Failed to save to localStorage:', err);
+        const raw2 = localStorage.getItem(STORAGE_ACCOUNTS);
+        accounts = raw2 ? (JSON.parse(raw2) || []) : [];
+        // normalize accounts: ensure numeric rate & balanceFCFA
+        accounts = accounts.map(a => {
+          const acc = { ...a };
+          acc.id = Number(acc.id || Date.now() + Math.floor(Math.random()*1000));
+          acc.rate = Number(acc.rate || 1);
+          // accept both balanceFCFA or unitsBalance+rate from older versions
+          if (typeof acc.balanceFCFA === 'undefined' && typeof acc.unitsBalance !== 'undefined') {
+            acc.balanceFCFA = Math.round(((Number(acc.unitsBalance||0) * Number(acc.rate || 1)) || 0) * 100) / 100;
+          }
+          if (typeof acc.balanceFCFA === 'undefined') acc.balanceFCFA = 0;
+          return acc;
+        });
+      } catch(e){ console.error('load accounts err', e); accounts = []; }
+    }
+
+    function saveToLocal(){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); } catch(e){ console.error('save records', e); } }
+    function saveAccountsToLocal(){ try { localStorage.setItem(STORAGE_ACCOUNTS, JSON.stringify(accounts)); } catch(e){ console.error('save accounts', e); } }
+
+    /* --------------------
+       Account helpers
+       -------------------- */
+    function nextAccountId(){ const max = accounts.reduce((m,a)=>Math.max(m,Number(a.id)||0),0); return (max || Date.now()) + Math.floor(Math.random()*1000); }
+    function getAccountById(id){ return accounts.find(a => Number(a.id) === Number(id)); }
+
+    /* --------------------
+       Currency & conversion helpers
+       - getPreferredRate(currency, date) : returns a numeric rate (FCFA per unit)
+       - computeAmountFCFA(txCurrency, txTotal, rateUsed)
+       -------------------- */
+    function getPreferredRate(currency, dateStr){
+      currency = currency || 'FCFA';
+      if (currency === 'FCFA') return 1;
+      const today = (dateStr || new Date().toISOString().slice(0,10));
+      // daily weighted from ventes on that date for that currency (if any)
+      const ventes = records.filter(r => r.record_type === 'vente' && r.txCurrency === currency && r.date === today && Number(r.qty||0) > 0 && Number(r.amountFCFA||0) > 0);
+      if (ventes.length > 0){
+        const totalFCFA = ventes.reduce((s,r)=> s + Number(r.amountFCFA||0), 0);
+        const totalQty = ventes.reduce((s,r)=> s + Number(r.qty||0), 0);
+        if (totalQty > 0) return totalFCFA / totalQty;
       }
+      // else find an account with that currency
+      const acc = accounts.find(a => a.currency === currency);
+      if (acc) return Number(acc.rate || DEFAULT_RATE_USD);
+      return DEFAULT_RATE_USD;
     }
 
-    // ---------------------------
-    // Utility
-    // ---------------------------
-    function subtotal(r) {
-      return (Number(r.qty) || 1) * (Number(r.price) || 0);
+    function computeAmountFCFA(txCurrency, txTotal, rateUsed){
+      if (!txCurrency || txCurrency === 'FCFA') return Number(txTotal || 0);
+      const rate = rateUsed || getPreferredRate(txCurrency);
+      return Number(txTotal || 0) * Number(rate || 1);
     }
 
-    // ---------------------------
-    // Rendering (KPIs, recents, tables, chart)
-    // ---------------------------
-    function renderKPIs() {
-      // Ignore 'depot' for KPI / profit calculations as requested
+    function convertAmount(amount, fromCurrency, toCurrency, dateStr){
+      if (fromCurrency === toCurrency) return Number(amount || 0);
+      const rateFrom = getPreferredRate(fromCurrency, dateStr);
+      const rateTo = getPreferredRate(toCurrency, dateStr);
+      if (!rateFrom || !rateTo) return Number(amount||0);
+      // amount_in_to = amount * (rateFrom / rateTo)
+      return Number(amount) * (rateFrom / rateTo);
+    }
+
+    /* --------------------
+       Apply / Reverse record effects on accounts
+       - accounts store balance in FCFA (balanceFCFA)
+       - applyRecordEffect: subtract from debit account, add to credit account (deltaFCFA)
+       -------------------- */
+    function amountFCFAForRecord(record){
+      const txTotal = Number(record.qty || 0) * Number(record.price || 0);
+      const dateStr = record.date || (new Date().toISOString().split('T')[0]);
+      const rateUsed = record.rateUsed || getPreferredRate(record.txCurrency || 'FCFA', dateStr);
+      return Math.round(convertAmount(txTotal, record.txCurrency || 'FCFA', 'FCFA', dateStr) * 100) / 100;
+    }
+
+    function applyRecordEffect(record){
+      if (!record) return;
+      // ensure amountFCFA exists
+      if (!record.amountFCFA) record.amountFCFA = amountFCFAForRecord(record);
+      const deltaFCFA = Number(record.amountFCFA || 0);
+      if (record.accountDebitId) {
+        const accD = getAccountById(record.accountDebitId);
+        if (accD) { accD.balanceFCFA = Math.round((Number(accD.balanceFCFA || 0) - deltaFCFA) * 100) / 100; }
+      }
+      if (record.accountCreditId) {
+        const accC = getAccountById(record.accountCreditId);
+        if (accC) { accC.balanceFCFA = Math.round((Number(accC.balanceFCFA || 0) + deltaFCFA) * 100) / 100; }
+      }
+      saveAccountsToLocal();
+    }
+
+    function reverseRecordEffect(record){
+      if (!record) return;
+      const deltaFCFA = Number(record.amountFCFA || amountFCFAForRecord(record));
+      if (record.accountDebitId) {
+        const accD = getAccountById(record.accountDebitId);
+        if (accD) { accD.balanceFCFA = Math.round((Number(accD.balanceFCFA || 0) + deltaFCFA) * 100) / 100; }
+      }
+      if (record.accountCreditId) {
+        const accC = getAccountById(record.accountCreditId);
+        if (accC) { accC.balanceFCFA = Math.round((Number(accC.balanceFCFA || 0) - deltaFCFA) * 100) / 100; }
+      }
+      saveAccountsToLocal();
+    }
+
+    /* --------------------
+       Rebuild accounts from records (full recalculation)
+       -------------------- */
+    function rebuildAccountBalancesFromRecords(){
+      // reset all account balances to 0
+      accounts.forEach(a => a.balanceFCFA = 0);
+      // Ensure each record has amountFCFA & rateUsed
+      records.forEach(r => {
+        if (!r.rateUsed) r.rateUsed = getPreferredRate(r.txCurrency || 'FCFA', r.date);
+        if (!r.amountFCFA) r.amountFCFA = computeAmountFCFA(r.txCurrency || 'FCFA', Number(r.qty||0) * Number(r.price||0), r.rateUsed);
+      });
+      // apply all in chronological order
+      const ordered = [...records].sort((a,b) => {
+        const da = (a.date || '').toString(); const db = (b.date || '').toString();
+        if (da !== db) return da.localeCompare(db);
+        return (Number(a.id)||0) - (Number(b.id)||0);
+      });
+      ordered.forEach(r => applyRecordEffect(r));
+      saveAccountsToLocal();
+      saveToLocal();
+    }
+
+    /* --------------------
+       Rendering functions & KPIs
+       - Computes benefit according to requested formula
+       -------------------- */
+    function renderKPIs(){
       const achats = records.filter(r => r.record_type === 'achat');
       const ventes = records.filter(r => r.record_type === 'vente');
       const depenses = records.filter(r => r.record_type === 'depense');
       const dettes = records.filter(r => r.record_type === 'dette');
 
-      const totalAchats = achats.reduce((s, r) => s + subtotal(r), 0);
-      const totalVentes = ventes.reduce((s, r) => s + subtotal(r), 0);
-      const totalDepenses = depenses.reduce((s, r) => s + subtotal(r), 0);
-      const totalDettes = dettes.reduce((s, r) => s + subtotal(r), 0);
+      const totalAchatsFCFA = achats.reduce((s,r)=> s + Number(r.amountFCFA || amountFCFAForRecord(r)), 0);
+      const totalVentesFCFA = ventes.reduce((s,r)=> s + Number(r.amountFCFA || amountFCFAForRecord(r)), 0);
+      const totalDepensesFCFA = depenses.reduce((s,r)=> s + Number(r.amountFCFA || amountFCFAForRecord(r)), 0);
+      const totalDettesFCFA = dettes.reduce((s,r)=> s + Number(r.amountFCFA || amountFCFAForRecord(r)), 0);
 
-      const totalQtyAchats = achats.reduce((s, r) => s + (Number(r.qty) || 0), 0);
-      const totalQtyVentes = ventes.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+      const totalQtyAchats = achats.reduce((s,r)=> s + Number(r.qty || 0), 0);
+      const totalQtyVentes = ventes.reduce((s,r)=> s + Number(r.qty || 0), 0);
 
-      const avgUnitAchat = totalQtyAchats > 0 ? (totalAchats / totalQtyAchats) : 0;
-      const avgUnitVente = totalQtyVentes > 0 ? (totalVentes / totalQtyVentes) : 0;
+      const avgUnitAchat = totalQtyAchats>0 ? totalAchatsFCFA/totalQtyAchats : 0;
+      const avgUnitVente = totalQtyVentes>0 ? totalVentesFCFA/totalQtyVentes : 0;
+      const benef = Math.round(((avgUnitVente - avgUnitAchat) * totalQtyVentes) * 100) / 100;
 
-      const benef = (avgUnitVente - avgUnitAchat) * totalQtyVentes;
-
-      safeSet('#kpiAchats', money(totalAchats));
-      safeSet('#kpiCA', money(totalVentes));
+      safeSet('#kpiAchats', money(totalAchatsFCFA));
+      safeSet('#kpiCA', money(totalVentesFCFA));
       safeSet('#kpiCAInfo', `Basé sur ${ventes.length} vente(s) | Croissance: —`);
       safeSet('#kpiBenefice', money(benef));
-      safeSet('#kpiBeneficeInfo', `(${money(avgUnitVente)} - ${money(avgUnitAchat)}) × ${totalQtyVentes} = ${money(benef)}`);
-      safeSet('#kpiDepenses', money(totalDepenses));
-      safeSet('#kpiDettes', money(totalDettes));
+      safeSet('#kpiBeneficeInfo', `(${moneySimple(avgUnitVente)} - ${moneySimple(avgUnitAchat)}) × ${totalQtyVentes} = ${money(benef)}`);
+      safeSet('#kpiDepenses', money(totalDepensesFCFA));
+      // store global aggregated values in window for reuse
+      window._nbbc_summary = { totalAchatsFCFA, totalVentesFCFA, totalDepensesFCFA, totalDettesFCFA, avgUnitAchat, avgUnitVente, benef, totalQtyVentes };
     }
 
-    function rowHTML(r, type, i) {
-      const zebra = i % 2 ? 'row-odd' : 'row-even';
-      const safeNote = (r.note || '').replace(/"/g, '&quot;');
-      const noteIcon = r.note ? `<span class="ml-2 text-primary-600 cursor-help" title="${safeNote}">📝</span>` : '';
+    function safeSet(sel, val){ const n = el(sel); if (n) n.textContent = val; }
+
+    function escapeHtml(s){ if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function getAccountSummary(r){ const debit = getAccountById(r.accountDebitId); const credit = getAccountById(r.accountCreditId); const parts=[]; if(debit) parts.push(`Debit: ${debit.label}`); if(credit) parts.push(`Credit: ${credit.label}`); return parts.join(' | '); }
+
+    function rowHTML(r, type, i){
+      const zebra = i%2 ? 'row-odd' : 'row-even';
+      const safeNote = (r.note || '').replace(/"/g,'&quot;');
+      const creditAcc = getAccountById(r.accountCreditId);
+      const debitAcc = getAccountById(r.accountDebitId);
+      const accLabel = (creditAcc ? creditAcc.label : '') || (debitAcc ? debitAcc.label : '');
+      const priceLabel = `${moneySimple(r.price)} ${r.txCurrency || 'FCFA'}`;
+      const totalFCFA = Number(r.amountFCFA || 0);
       return `
         <tr class="${zebra} hover:shadow-neon transition">
-          <td class="px-4 py-3" data-label="Sélection">
-            <input type="checkbox" data-id="${r.id}" class="rowCheck h-4 w-4 rounded border-primary-200">
-          </td>
+          <td class="px-4 py-3" data-label="Sélection"><input type="checkbox" data-id="${r.id}" class="rowCheck h-4 w-4 rounded border-primary-200"></td>
           <td class="px-4 py-3 whitespace-nowrap" data-label="Date">${r.date}</td>
-          <td class="px-4 py-3" data-label="Article">${r.item} ${noteIcon}</td>
+          <td class="px-4 py-3" data-label="Article">${escapeHtml(r.item)} ${r.note ? `<span class="ml-2 text-primary-600 cursor-help" title="${safeNote}">📝</span>` : ''}</td>
           <td class="px-4 py-3" data-label="Quantité">${r.qty}</td>
-          <td class="px-4 py-3" data-label="Prix Unitaire">${money(r.price)}</td>
-          ${ type === 'depot' ? `<td class="px-4 py-3" data-label="Méthode">${(r.method || '')}</td>` : '' }
-          <td class="px-4 py-3" data-label="Fournisseur/Client/Compte">${r.party}</td>
-          <td class="px-4 py-3 text-right font-semibold" data-label="Total">${money(subtotal(r))}</td>
+          <td class="px-4 py-3" data-label="Prix Unitaire">${priceLabel}</td>
+          <td class="px-4 py-3" data-label="Compte">${escapeHtml(accLabel)}<div class="text-xs text-ink-700/50">${escapeHtml(getAccountSummary(r))}</div></td>
+          <td class="px-4 py-3 text-right font-semibold" data-label="Total">${money(totalFCFA)}</td>
           <td class="px-4 py-3 text-right" data-label="Actions">
-            <button data-id="${r.id}" data-type="${type}" class="editOne inline-flex items-center gap-1.5 text-primary-600 hover:brightness-110 font-medium">
-              Éditer
-            </button>
-            <button data-id="${r.id}" data-type="${type}" class="deleteOne inline-flex items-center gap-1.5 text-red-600 hover:brightness-110 font-medium ml-4">
-              Supprimer
-            </button>
+            <button data-id="${r.id}" data-type="${type}" class="editOne inline-flex items-center gap-1.5 text-primary-600 hover:brightness-110 font-medium">Éditer</button>
+            <button data-id="${r.id}" data-type="${type}" class="deleteOne inline-flex items-center gap-1.5 text-red-600 hover:brightness-110 font-medium ml-4">Supprimer</button>
           </td>
         </tr>
       `;
     }
 
-    function renderTable(type) {
-      if (type === 'achat') return renderTableAchats();
-      if (type === 'vente') return renderTableVentes();
-      if (type === 'depense') return renderTableDepenses();
-      if (type === 'dette') return renderTableDettes();
-      if (type === 'depot') return renderTableDepots();
-    }
-
-    function renderTableAchats() {
-      const body = el('#achatBody');
-      if (!body) return;
+    /* --------------------
+       Render tables (achats, ventes, depenses, dettes, depots)
+       -------------------- */
+    function renderTableAchats(){
+      const body = el('#achatBody'); if(!body) return;
       const q = (el('#searchAchats')?.value || '').trim().toLowerCase();
-      const filtered = records.filter(r => r.record_type === 'achat' &&
-        [r.item, r.party, r.date, r.note].some(v => String(v || '').toLowerCase().includes(q))
-      );
-      body.innerHTML = filtered.map((r, i) => rowHTML(r, 'achat', i)).join('');
+      const filtered = records.filter(r => r.record_type === 'achat' && [r.item, r.party, r.date, r.note].some(v=>String(v||'').toLowerCase().includes(q)));
+      body.innerHTML = filtered.map((r,i)=>rowHTML(r,'achat',i)).join('');
       safeSet('#achatCount', `${filtered.length} élément(s) | Filtre appliqué si recherche active`);
-      safeSet('#totalAchats', money(filtered.reduce((s, r) => s + subtotal(r), 0)));
+      safeSet('#totalAchats', money(filtered.reduce((s,r)=>s + Number(r.amountFCFA || amountFCFAForRecord(r)),0)));
       updateBulkButtonsStateForTable('achat');
     }
 
-    function renderTableVentes() {
-      const body = el('#venteBody');
-      if (!body) return;
+    function renderTableVentes(){
+      const body = el('#venteBody'); if(!body) return;
       const q = (el('#searchVentes')?.value || '').trim().toLowerCase();
-      const filtered = records.filter(r => r.record_type === 'vente' &&
-        [r.item, r.party, r.date, r.note].some(v => String(v || '').toLowerCase().includes(q))
-      );
-      body.innerHTML = filtered.map((r, i) => rowHTML(r, 'vente', i)).join('');
+      const filtered = records.filter(r => r.record_type === 'vente' && [r.item, r.party, r.date, r.note].some(v=>String(v||'').toLowerCase().includes(q)));
+      body.innerHTML = filtered.map((r,i)=>rowHTML(r,'vente',i)).join('');
       safeSet('#venteCount', `${filtered.length} élément(s) | Filtre appliqué si recherche active`);
-      safeSet('#totalVentes', money(filtered.reduce((s, r) => s + subtotal(r), 0)));
+      safeSet('#totalVentes', money(filtered.reduce((s,r)=>s + Number(r.amountFCFA || amountFCFAForRecord(r)),0)));
       updateBulkButtonsStateForTable('vente');
     }
 
-    function renderTableDepenses() {
-      const body = el('#depenseBody');
-      if (!body) return;
+    function renderTableDepenses(){
+      const body = el('#depenseBody'); if(!body) return;
       const q = (el('#searchDepenses')?.value || '').trim().toLowerCase();
-      const filtered = records.filter(r => r.record_type === 'depense' &&
-        [r.item, r.party, r.date, r.note].some(v => String(v || '').toLowerCase().includes(q))
-      );
-      body.innerHTML = filtered.map((r, i) => rowHTML(r, 'depense', i)).join('');
+      const filtered = records.filter(r => r.record_type === 'depense' && [r.item, r.party, r.date, r.note].some(v=>String(v||'').toLowerCase().includes(q)));
+      body.innerHTML = filtered.map((r,i)=>rowHTML(r,'depense',i)).join('');
       safeSet('#depenseCount', `${filtered.length} élément(s) | Filtre appliqué si recherche active`);
-      safeSet('#totalDepenses', money(filtered.reduce((s, r) => s + subtotal(r), 0)));
+      safeSet('#totalDepenses', money(filtered.reduce((s,r)=>s + Number(r.amountFCFA || amountFCFAForRecord(r)),0)));
       updateBulkButtonsStateForTable('depense');
     }
 
-    function renderTableDettes() {
-      const body = el('#detteBody');
-      if (!body) return;
+    function renderTableDettes(){
+      const body = el('#detteBody'); if(!body) return;
       const q = (el('#searchDettes')?.value || '').trim().toLowerCase();
-      const filtered = records.filter(r => r.record_type === 'dette' &&
-        [r.item, r.party, r.date, r.note].some(v => String(v || '').toLowerCase().includes(q))
-      );
-      body.innerHTML = filtered.map((r, i) => rowHTML(r, 'dette', i)).join('');
+      const filtered = records.filter(r => r.record_type === 'dette' && [r.item, r.party, r.date, r.note].some(v=>String(v||'').toLowerCase().includes(q)));
+      body.innerHTML = filtered.map((r,i)=>rowHTML(r,'dette',i)).join('');
       safeSet('#detteCount', `${filtered.length} élément(s) | Filtre appliqué si recherche active`);
-      safeSet('#totalDettes', money(filtered.reduce((s, r) => s + subtotal(r), 0)));
+      safeSet('#totalDettes', money(filtered.reduce((s,r)=>s + Number(r.amountFCFA || amountFCFAForRecord(r)),0)));
       updateBulkButtonsStateForTable('dette');
     }
 
-    function renderTableDepots() {
-      const body = el('#depotBody');
-      if (!body) return;
+    function renderTableDepots(){
+      const body = el('#depotBody'); if(!body) return;
       const q = (el('#searchDepots')?.value || '').trim().toLowerCase();
-      const filtered = records.filter(r => r.record_type === 'depot' &&
-        [r.item, r.party, r.date, r.note, r.method].some(v => String(v || '').toLowerCase().includes(q))
-      );
-      body.innerHTML = filtered.map((r, i) => rowHTML(r, 'depot', i)).join('');
+      const filtered = records.filter(r => r.record_type === 'depot' && [r.item, r.party, r.date, r.note].some(v=>String(v||'').toLowerCase().includes(q)));
+      body.innerHTML = filtered.map((r,i)=>rowHTML(r,'depot',i)).join('');
       safeSet('#depotCount', `${filtered.length} élément(s) | Filtre appliqué si recherche active`);
-      safeSet('#totalDepots', money(filtered.reduce((s, r) => s + subtotal(r), 0)));
+      safeSet('#totalDepots', money(filtered.reduce((s,r)=>s + Number(r.amountFCFA || amountFCFAForRecord(r)),0)));
       updateBulkButtonsStateForTable('depot');
     }
 
-    function updateBulkButtonsStateForTable(type) {
+    function updateBulkButtonsStateForTable(type){
       let btn;
       if (type === 'achat') btn = el('#deleteSelectedAchats');
       else if (type === 'vente') btn = el('#deleteSelectedVentes');
@@ -697,12 +881,77 @@
       else if (type === 'dette') btn = el('#deleteSelectedDettes');
       else if (type === 'depot') btn = el('#deleteSelectedDepots');
       const bodyId = type === 'achat' ? 'achatBody' : type === 'vente' ? 'venteBody' : type === 'depense' ? 'depenseBody' : type === 'dette' ? 'detteBody' : 'depotBody';
-      const anyChecked = els(`#${bodyId} .rowCheck`).some(c => c.checked);
+      const anyChecked = els(`#${bodyId} .rowCheck`).some(c=>c.checked);
       if (btn) btn.disabled = !anyChecked;
     }
 
-    // Modal open/close
-    function openModal(type, id = null) {
+    /* --------------------
+       Accounts rendering & options (with benefit & deductions)
+       -------------------- */
+    function renderAccountsTable(){
+      const body = el('#comptesBody'); if(!body) return;
+      body.innerHTML = accounts.map(a=>{
+        const balFCFA = Number(a.balanceFCFA || 0);
+        // equiv in units for display
+        let equiv = `${Math.round((balFCFA / (a.rate || 1)) * 100) / 100} ${a.currency}`;
+        return `<tr class="hover:shadow-neon transition">
+          <td class="px-4 py-3">${escapeHtml(a.label)}</td>
+          <td class="px-4 py-3">${a.currency}</td>
+          <td class="px-4 py-3">${moneySimple(a.rate)}</td>
+          <td class="px-4 py-3 text-right font-semibold">${money(balFCFA)}</td>
+          <td class="px-4 py-3 text-right">${escapeHtml(equiv)}</td>
+          <td class="px-4 py-3 text-right">
+            <button data-id="${a.id}" class="editCompte inline-flex items-center gap-2 text-primary-600">✎</button>
+            <button data-id="${a.id}" class="resetCompte inline-flex items-center gap-2 text-amber-600 ml-3">0</button>
+            <button data-id="${a.id}" class="deleteCompte inline-flex items-center gap-2 text-red-600 ml-3">🗑</button>
+          </td>
+        </tr>`;
+      }).join('');
+      safeSet('#compteCount', `${accounts.length} libellé(s)`);
+
+      // compute totals & benefit
+      const sumAccounts = accounts.reduce((s,a)=> s + Number(a.balanceFCFA || 0), 0);
+      // retrieve summary computed in renderKPIs (or compute again)
+      renderKPIs();
+      const sumAchats = window._nbbc_summary?.totalAchatsFCFA || records.filter(r=>r.record_type==='achat').reduce((s,r)=> s + Number(r.amountFCFA || amountFCFAForRecord(r)),0);
+      const sumVentes = window._nbbc_summary?.totalVentesFCFA || records.filter(r=>r.record_type==='vente').reduce((s,r)=> s + Number(r.amountFCFA || amountFCFAForRecord(r)),0);
+      const sumDepenses = window._nbbc_summary?.totalDepensesFCFA || records.filter(r=>r.record_type==='depense').reduce((s,r)=> s + Number(r.amountFCFA || amountFCFAForRecord(r)),0);
+      const sumDettes = window._nbbc_summary?.totalDettesFCFA || records.filter(r=>r.record_type==='dette').reduce((s,r)=> s + Number(r.amountFCFA || amountFCFAForRecord(r)),0);
+
+      const totalQtyAchats = records.filter(r=>r.record_type==='achat').reduce((s,r)=> s + Number(r.qty||0),0);
+      const totalQtyVentes = records.filter(r=>r.record_type==='vente').reduce((s,r)=> s + Number(r.qty||0),0);
+      const avgUnitAchat = totalQtyAchats>0 ? sumAchats/totalQtyAchats : 0;
+      const avgUnitVente = totalQtyVentes>0 ? sumVentes/totalQtyVentes : 0;
+      const benef = Math.round(((avgUnitVente - avgUnitAchat) * totalQtyVentes) * 100) / 100;
+
+      // total available calculation (as requested):
+      // Total Disponible = somme des soldes des comptes + bénéfice - total dépenses - total dettes
+      const totalDisponible = Math.round((sumAccounts + benef - sumDepenses - sumDettes) * 100) / 100;
+
+      safeSet('#totalCapital', money(totalDisponible));
+      // update formula text details
+      const formulaInfo = el('#accountsFormulaInfo');
+      if (formulaInfo) {
+        formulaInfo.innerHTML = `Bénéfice = (${moneySimple(avgUnitVente)} - ${moneySimple(avgUnitAchat)}) × ${totalQtyVentes} = ${money(benef)} &nbsp; | &nbsp; Dépenses: ${money(sumDepenses)} &nbsp; | &nbsp; Dettes: ${money(sumDettes)}`;
+      }
+
+      renderAccountOptions();
+    }
+
+    function renderAccountOptions(){
+      const debitSel = el('#f_debit_account');
+      const creditSel = el('#f_credit_account');
+      const reassignSel = el('#reassignTarget');
+      const options = accounts.map(a => `<option value="${a.id}">${escapeHtml(a.label)} (${a.currency})</option>`).join('');
+      if (debitSel) debitSel.innerHTML = '<option value="">-- Choisir débit --</option>' + options;
+      if (creditSel) creditSel.innerHTML = '<option value="">-- Choisir crédit --</option>' + options;
+      if (reassignSel) reassignSel.innerHTML = '<option value="">-- choisir --</option>' + options;
+    }
+
+    /* --------------------
+       Modal open/close (entry)
+       -------------------- */
+    function openModal(type, id=null){
       formContext = type;
       editId = id;
       const titles = {
@@ -710,350 +959,570 @@
         vente: { title: 'Nouvelle Vente', item: 'Article', party: 'Client' },
         depense: { title: 'Nouvelle Dépense', item: 'Description', party: 'Bénéficiaire' },
         dette: { title: 'Nouvelle Dette', item: 'Description', party: 'Créancier' },
-        depot: { title: 'Nouveau Dépôt / Retrait', item: 'Type (Dépôt/Retrait)', party: 'Opérateur / Compte' }
+        depot: { title: 'Nouveau Dépôt / Retrait', item: 'Type', party: 'Opérateur / Compte' }
       };
       const t = titles[type] || titles['achat'];
-      const mt = el('#modalTitle'); if (mt) mt.textContent = id ? `Modifier ${t.title}` : t.title;
-      const fil = el('#f_item_label'); if (fil) fil.textContent = t.item;
-      const fpl = el('#f_party_label'); if (fpl) fpl.textContent = t.party;
+      el('#modalTitle').textContent = id ? `Modifier ${t.title}` : t.title;
+      el('#f_item_label').textContent = t.item;
+      el('#f_party_label').textContent = t.party;
       el('#formError').classList.add('hidden');
 
-      if (id) {
-        const r = records.find(r => r.id === id && r.record_type === type);
-        if (r) {
+      if (id){
+        const r = records.find(rr => Number(rr.id) === Number(id) && rr.record_type === type);
+        if (r){
           el('#f_id').value = r.id;
           el('#f_date').value = r.date;
-          el('#f_item').value = r.item;
+          if (r.item && r.item.toLowerCase().includes('dollar')){
+            el('#f_item_type').value = 'Dollar';
+            el('#f_item_custom').classList.add('hidden');
+          } else {
+            el('#f_item_type').value = 'Autre';
+            el('#f_item_custom').classList.remove('hidden');
+            el('#f_item_custom').value = r.item || '';
+          }
           el('#f_qty').value = r.qty;
           el('#f_price').value = r.price;
-          el('#f_party').value = r.party;
+          el('#f_txcurrency').value = r.txCurrency || 'FCFA';
+          el('#f_debit_account').value = r.accountDebitId || '';
+          el('#f_credit_account').value = r.accountCreditId || '';
+          el('#f_party').value = r.party || '';
           el('#f_note').value = r.note || '';
-          el('#f_method').value = r.method || 'autre';
         }
       } else {
         el('#entryForm').reset();
         el('#f_date').value = new Date().toISOString().split('T')[0];
-        if (type === 'depot') {
-          el('#f_item').value = 'Dépôt';
-          el('#f_qty').value = 1;
-          el('#f_price').value = 0;
-          el('#f_method').value = 'flooz';
+        el('#f_qty').value = 1;
+        el('#f_price').value = 0;
+        if (type === 'achat' || type === 'vente'){
+          el('#f_item_type').value = 'Dollar';
+          el('#f_item_custom').classList.add('hidden');
+          el('#f_txcurrency').value = 'USD';
         } else {
-          el('#f_qty').value = 1;
-          el('#f_price').value = 0;
-          el('#f_method').value = 'autre';
+          el('#f_item_type').value = 'Autre';
+          el('#f_item_custom').classList.add('hidden');
+          el('#f_txcurrency').value = 'FCFA';
         }
       }
 
-      el('#modalOverlay').classList.remove('hidden');
+      // ensure dropdowns populated
+      renderAccountOptions();
+
+      // show modal
+      document.querySelectorAll('.modal-backdrop').forEach(m => m.style.display = 'none');
+      el('#modalOverlay').style.display = 'block';
+      document.body.style.overflow = 'hidden';
     }
 
-    function closeModal() {
-      el('#modalOverlay').classList.add('hidden');
+    function closeModal(){
+      el('#modalOverlay').style.display = 'none';
       el('#entryForm').reset();
       editId = null;
       el('#formError').classList.add('hidden');
+      document.body.style.overflow = '';
     }
 
-    function nextId() {
-      const max = records.reduce((m, r) => Math.max(m, Number(r.id) || 0), 0);
-      return (max || Date.now()) + 1;
-    }
-
-    function saveEntry(e) {
-      e.preventDefault();
-      const data = {
-        record_type: formContext,
-        date: el('#f_date').value,
-        item: el('#f_item').value.trim(),
-        qty: Number(el('#f_qty').value),
-        price: Number(el('#f_price').value),
-        party: el('#f_party').value.trim(),
-        note: el('#f_note').value.trim(),
-        method: el('#f_method') ? el('#f_method').value : undefined
-      };
-
-      if (!data.date || !data.item || !data.party || data.qty < 1 || data.price < 0 || Number.isNaN(data.qty) || Number.isNaN(data.price)) {
-        el('#formError').classList.remove('hidden');
-        return;
-      }
-
-      if (editId) {
-        const idx = records.findIndex(r => r.id === Number(editId));
-        if (idx !== -1) {
-          records[idx] = { ...records[idx], ...data, id: Number(editId) };
-        } else {
-          records.push({ id: Number(editId), ...data });
+    /* --------------------
+       Compte modal open/close
+       -------------------- */
+    function openCompteModal(editId=null){
+      if (editId){
+        const a = getAccountById(editId);
+        if (a){
+          el('#compteModalTitle').textContent = `Modifier libellé`;
+          el('#compte_id').value = a.id;
+          el('#compte_label').value = a.label;
+          el('#compte_currency').value = a.currency;
+          el('#compte_rate').value = a.rate;
+          el('#compte_balance_units').value = Math.round((Number(a.balanceFCFA || 0) / (Number(a.rate || 1))) * 100) / 100;
         }
       } else {
-        const id = nextId();
-        records.push({ id, ...data });
+        el('#compteModalTitle').textContent = `Nouveau libellé`;
+        el('#compteForm').reset();
+        el('#compte_id').value = '';
       }
+      document.querySelectorAll('.modal-backdrop').forEach(m => m.style.display = 'none');
+      el('#compteModal').style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    }
+    function closeCompteModal(){ el('#compteModal').style.display = 'none'; el('#compteForm').reset(); document.body.style.overflow = ''; }
 
+    /* --------------------
+       Delete compte modal
+       -------------------- */
+    let accountToDeleteId = null;
+    function openDeleteCompteModal(id){
+      accountToDeleteId = id;
+      const remaining = accounts.filter(a => a.id !== id);
+      const sel = el('#reassignTarget');
+      if (sel) sel.innerHTML = '<option value="">-- choisir --</option>' + remaining.map(a=>`<option value="${a.id}">${escapeHtml(a.label)}</option>`).join('');
+      el('#deleteCompteSetNull').checked = false;
+      document.querySelectorAll('.modal-backdrop').forEach(m => m.style.display = 'none');
+      el('#deleteCompteModal').style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    }
+    function closeDeleteCompteModal(){ accountToDeleteId = null; el('#deleteCompteModal').style.display = 'none'; document.body.style.overflow = ''; }
+
+    /* --------------------
+       Save compte
+       -------------------- */
+    function saveCompte(e){
+      e.preventDefault();
+      const id = el('#compte_id').value;
+      const label = el('#compte_label').value.trim();
+      const currency = el('#compte_currency').value;
+      const rate = Number(el('#compte_rate').value) || (currency === 'USD' ? DEFAULT_RATE_USD : 1);
+      const units = Number(el('#compte_balance_units').value) || 0;
+      if (!label) return alert('Libellé requis');
+      if (id){
+        const idx = accounts.findIndex(a => Number(a.id) === Number(id));
+        if (idx !== -1){
+          accounts[idx].label = label;
+          accounts[idx].currency = currency;
+          accounts[idx].rate = rate;
+          accounts[idx].balanceFCFA = Math.round(units * rate * 100) / 100;
+        }
+      } else {
+        const newId = nextAccountId();
+        accounts.push({ id:newId, label, currency, rate, balanceFCFA: Math.round(units * rate * 100)/100 });
+      }
+      saveAccountsToLocal();
+      renderAccountsTable();
+      closeCompteModal();
+    }
+
+    /* --------------------
+       Reset all accounts / single account
+       -------------------- */
+    function resetAllAccounts(){
+      if (!confirm('Réinitialiser tous les soldes des comptes à zéro ?')) return;
+      accounts.forEach(a => a.balanceFCFA = 0);
+      saveAccountsToLocal();
+      renderAccountsTable();
+    }
+    function resetAccount(id){
+      const a = getAccountById(id);
+      if (!a) return;
+      if (!confirm(`Réinitialiser le solde du libellé "${a.label}" à zéro ?`)) return;
+      a.balanceFCFA = 0;
+      saveAccountsToLocal();
+      renderAccountsTable();
+    }
+
+    /* --------------------
+       Confirm delete compte
+       -------------------- */
+    function confirmDeleteCompte(){
+      const doSetNull = el('#deleteCompteSetNull').checked;
+      const target = el('#reassignTarget').value;
+      if (!accountToDeleteId) return closeDeleteCompteModal();
+      const idToDelete = Number(accountToDeleteId);
+      const related = records.filter(r => Number(r.accountDebitId) === idToDelete || Number(r.accountCreditId) === idToDelete);
+      if (related.length > 0){
+        if (!doSetNull && !target){
+          alert('Choisissez un compte de réaffectation ou cochez "mettre le compte à vide".');
+          return;
+        }
+        if (!doSetNull && target){
+          const targetId = Number(target);
+          records.forEach(r => {
+            if (Number(r.accountDebitId) === idToDelete) r.accountDebitId = targetId;
+            if (Number(r.accountCreditId) === idToDelete) r.accountCreditId = targetId;
+          });
+        } else {
+          records.forEach(r => {
+            if (Number(r.accountDebitId) === idToDelete) r.accountDebitId = '';
+            if (Number(r.accountCreditId) === idToDelete) r.accountCreditId = '';
+          });
+        }
+      }
+      accounts = accounts.filter(a => Number(a.id) !== idToDelete);
+      saveAccountsToLocal();
       saveToLocal();
+      renderAccountsTable();
       renderAll();
-      closeModal();
+      closeDeleteCompteModal();
     }
 
-    function openConfirmModal(ids, type, isBulk = false) {
-      el('#confirmText').textContent = isBulk
-        ? `Voulez-vous vraiment supprimer ${ids.length} éléments sélectionnés ? Cette action est irréversible et affectera vos KPIs.`
-        : 'Voulez-vous vraiment supprimer cet élément ? Cette action est irréversible et affectera vos KPIs.';
-      el('#confirmOverlay').classList.remove('hidden');
-      el('#confirmOk').onclick = () => deleteEntries(ids, type);
-    }
-
-    function deleteEntries(ids, type) {
-      records = records.filter(r => !ids.includes(Number(r.id)));
-      saveToLocal();
-      renderAll();
-      el('#confirmOverlay').classList.add('hidden');
-    }
-
-    // ---------------------------
-    // PDF export improvements
-    // ---------------------------
-    // Money formatter for PDF: avoids NBSP and ensures proper formatting
-    function moneyForPdf(n) {
-      const v = Number(n || 0);
-      // format using French locale (gives NBSP), then replace NBSP with regular space
-      const formatted = v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\u202F|\u00A0/g, ' ');
-      return formatted + ' FCFA';
-    }
-
-    function exportPDF(type) {
+    /* --------------------
+       Export comptes PDF
+       - Use sanitizeForPdf before sending text/numbers to jsPDF
+       -------------------- */
+    function exportComptesPDF(){
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('p', 'pt', 'a4');
+      const doc = new jsPDF('p','pt','a4');
+      const title = `NBBC Gestion — Rapport Comptes - ${new Date().toLocaleDateString('fr-FR')}`;
+      doc.setFontSize(12); doc.text(sanitizeForPdf(title), 40, 30);
+      const cols = [['Libellé','Devise','Taux (1→FCFA)','Solde (FCFA)','Equiv. unités']];
+      const rows = accounts.map(a => {
+        const balFCFA = Number(a.balanceFCFA || 0);
+        const equivUnits = Math.round((balFCFA / (a.rate || 1)) * 100) / 100;
+        // sanitize numeric strings for PDF: remove NBSP etc.
+        return [
+          sanitizeForPdf(a.label),
+          sanitizeForPdf(a.currency),
+          sanitizeForPdf(moneySimple(a.rate)),
+          sanitizeForPdf(money(balFCFA)),
+          sanitizeForPdf(`${equivUnits} ${a.currency}`)
+        ];
+      });
+      doc.autoTable({ startY: 50, head: cols, body: rows, styles:{fontSize:10}, headStyles:{fillColor:[26,117,255], textColor:255}, theme:'grid' });
 
+      // append summary (benefice, depenses, dettes, total disponible)
+      const sumDepenses = records.filter(r=>r.record_type==='depense').reduce((s,r)=> s + Number(r.amountFCFA||amountFCFAForRecord(r)),0);
+      const sumDettes = records.filter(r=>r.record_type==='dette').reduce((s,r)=> s + Number(r.amountFCFA||amountFCFAForRecord(r)),0);
+      const sumAchats = records.filter(r=>r.record_type==='achat').reduce((s,r)=> s + Number(r.amountFCFA||amountFCFAForRecord(r)),0);
+      const sumVentes = records.filter(r=>r.record_type==='vente').reduce((s,r)=> s + Number(r.amountFCFA||amountFCFAForRecord(r)),0);
+      const qtyVentes = records.filter(r=>r.record_type==='vente').reduce((s,r)=> s + Number(r.qty||0),0);
+      const qtyAchats = records.filter(r=>r.record_type==='achat').reduce((s,r)=> s + Number(r.qty||0),0);
+      const avgA = qtyAchats>0 ? sumAchats/qtyAchats : 0;
+      const avgV = qtyVentes>0 ? sumVentes/qtyVentes : 0;
+      const benef = Math.round(((avgV - avgA) * qtyVentes) * 100) / 100;
+      const sumAccounts = accounts.reduce((s,a)=> s + Number(a.balanceFCFA||0),0);
+      const totalDisponible = Math.round((sumAccounts + benef - sumDepenses - sumDettes)*100)/100;
+
+      let yPos = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY + 20 : 80;
+      doc.setFontSize(11);
+      doc.text(sanitizeForPdf(`Total comptes (somme soldes): ${money(sumAccounts)}`), 40, yPos); yPos += 16;
+      doc.text(sanitizeForPdf(`Bénéfice calculé: ${money(benef)}`), 40, yPos); yPos += 16;
+      doc.text(sanitizeForPdf(`Total Dépenses: ${money(sumDepenses)}`), 40, yPos); yPos += 16;
+      doc.text(sanitizeForPdf(`Total Dettes: ${money(sumDettes)}`), 40, yPos); yPos += 16;
+      doc.text(sanitizeForPdf(`Total Disponible: ${money(totalDisponible)}`), 40, yPos);
+      doc.save(`comptes_${new Date().toISOString().split('T')[0]}.pdf`);
+    }
+
+    /* --------------------
+       Export records to PDF (autotable)
+       -------------------- */
+    function cleanNumberForPdf(n){ 
+      return sanitizeForPdf(Number(n||0).toLocaleString('fr-FR',{minimumFractionDigits:2, maximumFractionDigits:2})); 
+    }
+
+    function exportPDF(type){
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p','pt','a4');
       const filtered = records.filter(r => r.record_type === type);
-
-      // Determine column config depending on type
       let columns = [];
-      // We will use dataKey names to assign column styles below
-      if (type === 'depot') {
+      if (type === 'depot'){
         columns = [
-          { header: 'Date', dataKey: 'date' },
-          { header: 'Type', dataKey: 'item' },
-          { header: 'Quantité', dataKey: 'qty' },
-          { header: 'Montant (FCFA)', dataKey: 'price' },
-          { header: 'Méthode', dataKey: 'method' },
-          { header: 'Opérateur/Compte', dataKey: 'party' },
-          { header: 'Total (FCFA)', dataKey: 'total' },
-          { header: 'Note', dataKey: 'note' }
+          { header:'Date', dataKey:'date' },
+          { header:'Type', dataKey:'item' },
+          { header:'Quantité', dataKey:'qty' },
+          { header:'Montant', dataKey:'price' },
+          { header:'Compte débit', dataKey:'debit' },
+          { header:'Compte crédit', dataKey:'credit' },
+          { header:'Total (FCFA)', dataKey:'total' },
+          { header:'Note', dataKey:'note' }
         ];
       } else {
-        const partyLabel = type === 'achat' ? 'Fournisseur' : type === 'vente' ? 'Client' : type === 'depense' ? 'Bénéficiaire' : type === 'dette' ? 'Créancier' : 'Partie';
+        const partyLabel = type === 'achat' ? 'Fournisseur' : type === 'vente' ? 'Client' : type === 'depense' ? 'Bénéficiaire' : 'Créancier';
         columns = [
-          { header: 'Date', dataKey: 'date' },
-          { header: (type === 'depense' || type === 'dette') ? 'Description' : 'Article', dataKey: 'item' },
-          { header: 'Quantité', dataKey: 'qty' },
-          { header: 'Prix Unitaire (FCFA)', dataKey: 'price' },
-          { header: partyLabel, dataKey: 'party' },
-          { header: 'Total (FCFA)', dataKey: 'total' },
-          { header: 'Note', dataKey: 'note' }
+          { header:'Date', dataKey:'date' },
+          { header: (type==='depense' || type==='dette') ? 'Description' : 'Article', dataKey:'item' },
+          { header:'Quantité', dataKey:'qty' },
+          { header:'Prix Unitaire', dataKey:'price' },
+          { header: partyLabel, dataKey:'party' },
+          { header:'Compte débit', dataKey:'debit' },
+          { header:'Compte crédit', dataKey:'credit' },
+          { header:'Total (FCFA)', dataKey:'total' },
+          { header:'Note', dataKey:'note' }
         ];
       }
 
-      // Build rows and sanitize text (no NBSP)
-      const rows = filtered.map(r => ({
-        date: r.date || '',
-        item: r.item || '',
-        qty: String(r.qty || ''),
-        price: moneyForPdf(r.price),
-        method: r.method || '',
-        party: r.party || '',
-        total: moneyForPdf(subtotal(r)),
-        note: r.note || ''
-      }));
-
-      const title = `Rapport ${type.charAt(0).toUpperCase() + type.slice(1)}s - ${new Date().toLocaleDateString('fr-FR')}`;
-      doc.setFontSize(12);
-      doc.text(title, 40, 40);
-
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = { left: 40, right: 40, top: 60, bottom: 40 };
-      const contentWidth = pageWidth - margin.left - margin.right;
-
-      // Column width distribution (using dataKey names)
-      // We intentionally make 'note' and 'total' wider as requested.
-      const columnWidthsByKey = {};
-      // sensible defaults scaled to contentWidth:
-      // date small, qty small, price/total medium, item & party medium-larger, note large
-      if (type === 'depot') {
-        columnWidthsByKey['date'] = Math.round(contentWidth * 0.12);
-        columnWidthsByKey['item'] = Math.round(contentWidth * 0.14);
-        columnWidthsByKey['qty'] = Math.round(contentWidth * 0.07);
-        columnWidthsByKey['price'] = Math.round(contentWidth * 0.12);
-        columnWidthsByKey['method'] = Math.round(contentWidth * 0.10);
-        columnWidthsByKey['party'] = Math.round(contentWidth * 0.15);
-        columnWidthsByKey['total'] = Math.round(contentWidth * 0.14); // larger
-        columnWidthsByKey['note'] = Math.round(contentWidth * 0.16);  // largest for notes
-      } else {
-        columnWidthsByKey['date'] = Math.round(contentWidth * 0.12);
-        columnWidthsByKey['item'] = Math.round(contentWidth * 0.22);
-        columnWidthsByKey['qty'] = Math.round(contentWidth * 0.06);
-        columnWidthsByKey['price'] = Math.round(contentWidth * 0.12);
-        columnWidthsByKey['party'] = Math.round(contentWidth * 0.14);
-        columnWidthsByKey['total'] = Math.round(contentWidth * 0.14); // wider than default
-        columnWidthsByKey['note'] = Math.round(contentWidth * 0.20);  // larger for notes
-      }
-
-      // Ensure total widths do not exceed contentWidth - if so, scale down proportionally
-      const sumW = Object.values(columnWidthsByKey).reduce((a, b) => a + b, 0);
-      if (sumW > contentWidth) {
-        const scale = contentWidth / sumW;
-        Object.keys(columnWidthsByKey).forEach(k => columnWidthsByKey[k] = Math.floor(columnWidthsByKey[k] * scale));
-      }
-
-      // Build columnStyles for autoTable keyed by dataKey
-      const columnStyles = {};
-      Object.keys(columnWidthsByKey).forEach(key => {
-        columnStyles[key] = { cellWidth: columnWidthsByKey[key], valign: 'middle' };
-        // right-align numeric columns
-        if (key === 'price' || key === 'total' || key === 'qty') columnStyles[key].halign = 'right';
-        // allow line breaks for note
-        if (key === 'note') columnStyles[key].overflow = 'linebreak';
+      const rows = filtered.map(r => {
+        const debitAcc = getAccountById(r.accountDebitId);
+        const creditAcc = getAccountById(r.accountCreditId);
+        return {
+          date: sanitizeForPdf(r.date || ''),
+          item: sanitizeForPdf(r.item || ''),
+          qty: sanitizeForPdf(String(r.qty || '')),
+          price: sanitizeForPdf(`${cleanNumberForPdf(r.price)} ${sanitizeForPdf(r.txCurrency || 'FCFA')}`),
+          party: sanitizeForPdf(r.party || ''),
+          debit: sanitizeForPdf(debitAcc ? `${debitAcc.label} (${debitAcc.currency})` : ''),
+          credit: sanitizeForPdf(creditAcc ? `${creditAcc.label} (${creditAcc.currency})` : ''),
+          total: sanitizeForPdf(cleanNumberForPdf(r.amountFCFA || amountFCFAForRecord(r)) + ' FCFA'),
+          note: sanitizeForPdf(r.note || '')
+        };
       });
 
-      // Run autoTable
+      const title = sanitizeForPdf(`Rapport ${type.charAt(0).toUpperCase() + type.slice(1)}s - ${new Date().toLocaleDateString('fr-FR')}`);
+      doc.setFontSize(12); doc.text(title, 40, 40);
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = { left:40, right:40, top:60, bottom:40 };
+      const contentWidth = pageWidth - margin.left - margin.right;
+
+      const colWidths = {};
+      if (type === 'depot'){
+        colWidths['date'] = Math.round(contentWidth * 0.12);
+        colWidths['item'] = Math.round(contentWidth * 0.12);
+        colWidths['qty'] = Math.round(contentWidth * 0.06);
+        colWidths['price'] = Math.round(contentWidth * 0.12);
+        colWidths['debit'] = Math.round(contentWidth * 0.14);
+        colWidths['credit'] = Math.round(contentWidth * 0.14);
+        colWidths['total'] = Math.round(contentWidth * 0.12);
+        colWidths['note'] = Math.round(contentWidth * 0.18);
+      } else {
+        colWidths['date'] = Math.round(contentWidth * 0.10);
+        colWidths['item'] = Math.round(contentWidth * 0.20);
+        colWidths['qty'] = Math.round(contentWidth * 0.06);
+        colWidths['price'] = Math.round(contentWidth * 0.12);
+        colWidths['party'] = Math.round(contentWidth * 0.14);
+        colWidths['debit'] = Math.round(contentWidth * 0.10);
+        colWidths['credit'] = Math.round(contentWidth * 0.10);
+        colWidths['total'] = Math.round(contentWidth * 0.10);
+        colWidths['note'] = Math.round(contentWidth * 0.18);
+      }
+
+      const columnStyles = {};
+      Object.keys(colWidths).forEach(k => {
+        columnStyles[k] = { cellWidth: colWidths[k], valign:'middle', overflow:'linebreak' };
+        if (k === 'qty' || k === 'price' || k === 'total') columnStyles[k].halign = 'right';
+      });
+
       doc.autoTable({
         startY: 60,
         head: [columns.map(c => c.header)],
         body: rows.map(r => columns.map(c => r[c.dataKey])),
-        styles: { fontSize: 10, cellPadding: 6, overflow: 'linebreak', valign: 'middle' },
-        headStyles: { fillColor: [26, 117, 255], textColor: 255, halign: 'center' },
-        columnStyles: columnStyles,
-        margin: margin,
-        theme: 'grid',
-        pageBreak: 'auto',
-        didDrawPage: function (data) {
+        styles:{fontSize:9, cellPadding:6, overflow:'linebreak', valign:'middle'},
+        headStyles:{fillColor:[26,117,255], textColor:255, halign:'center'},
+        columnStyles,
+        margin,
+        theme:'grid',
+        didDrawPage: function(data){
           const page = doc.internal.getNumberOfPages();
           doc.setFontSize(9);
-          doc.text(`NBBC Gestion — ${title}`, margin.left, 22);
-          doc.setFontSize(9);
-          doc.text(`Page ${page}`, pageWidth - margin.right - 50, 22);
+          doc.text(sanitizeForPdf(`NBBC Gestion — ${title}`), margin.left, 22);
+          doc.text(sanitizeForPdf(`Page ${page}`), pageWidth - margin.right - 50, 22);
         }
       });
 
-      // compute total sum and display after the table (sanitized)
-      const totalSum = filtered.reduce((s, r) => s + subtotal(r), 0);
-      const sanitizedTotal = moneyForPdf(totalSum);
-
-      // place summary after the table (if necessary move to next page)
+      const totalSum = filtered.reduce((s,r)=> s + Number(r.amountFCFA || amountFCFAForRecord(r)), 0);
+      const sanitizedTotal = sanitizeForPdf(cleanNumberForPdf(totalSum) + ' FCFA');
       let yPos = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY + 16 : 80;
-      if (yPos > (doc.internal.pageSize.getHeight() - margin.bottom - 40)) {
-        doc.addPage();
-        yPos = margin.top;
-      }
+      if (yPos > (doc.internal.pageSize.getHeight() - margin.bottom - 40)) { doc.addPage(); yPos = margin.top; }
       doc.setFontSize(11);
-      doc.text(`Total ${type.charAt(0).toUpperCase() + type.slice(1)}s: ${sanitizedTotal}`, margin.left, yPos);
+      doc.text(sanitizeForPdf(`Total ${type.charAt(0).toUpperCase() + type.slice(1)}s: ${sanitizedTotal}`), margin.left, yPos);
 
-      // Save file
       const filename = `${type}s_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(filename);
     }
 
-    // ---------------------------
-    // Chart rendering
-    // ---------------------------
-    function renderChart() {
-      const svg = el('#monthlyChart');
-      if (!svg) return;
+    /* --------------------
+       Chart rendering
+       -------------------- */
+    function renderChart(){
+      const svg = el('#monthlyChart'); if(!svg) return;
       svg.innerHTML = '';
-      const monthsSet = new Set(records.map(r => r.date ? r.date.slice(0, 7) : ''));
+      const monthsSet = new Set(records.map(r => r.date ? r.date.slice(0,7) : ''));
       const months = Array.from(monthsSet).filter(Boolean).sort();
       if (months.length === 0) return;
-
-      const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+      const margin = { top:20, right:30, bottom:40, left:50 };
       const width = 800 - margin.left - margin.right;
       const height = 300 - margin.top - margin.bottom;
-
-      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
-      svg.appendChild(g);
-
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('transform', `translate(${margin.left},${margin.top})`); svg.appendChild(g);
       const monthlyData = months.map(m => ({
-        month: m,
-        achats: records.filter(r => r.record_type === 'achat' && r.date.startsWith(m)).reduce((s, r) => s + subtotal(r), 0),
-        ventes: records.filter(r => r.record_type === 'vente' && r.date.startsWith(m)).reduce((s, r) => s + subtotal(r), 0),
-        depenses: records.filter(r => r.record_type === 'depense' && r.date.startsWith(m)).reduce((s, r) => s + subtotal(r), 0),
-        dettes: records.filter(r => r.record_type === 'dette' && r.date.startsWith(m)).reduce((s, r) => s + subtotal(r), 0)
+        month:m,
+        achats: records.filter(r=>r.record_type==='achat' && r.date.startsWith(m)).reduce((s,r)=>s+Number(r.amountFCFA||amountFCFAForRecord(r)),0),
+        ventes: records.filter(r=>r.record_type==='vente' && r.date.startsWith(m)).reduce((s,r)=>s+Number(r.amountFCFA||amountFCFAForRecord(r)),0),
+        depenses: records.filter(r=>r.record_type==='depense' && r.date.startsWith(m)).reduce((s,r)=>s+Number(r.amountFCFA||amountFCFAForRecord(r)),0),
+        dettes: records.filter(r=>r.record_type==='dette' && r.date.startsWith(m)).reduce((s,r)=>s+Number(r.amountFCFA||amountFCFAForRecord(r)),0)
       }));
-
-      const maxY = Math.max(...monthlyData.flatMap(d => [d.achats, d.ventes, d.depenses, d.dettes]), 1);
-      const xScale = (i) => (i / (months.length - 1)) * width;
-      const yScale = (v) => height - (v / maxY) * height;
-
-      const colors = { achats: '#1a75ff', depenses: '#ef4444', ventes: '#ffd443', dettes: '#8b5cf6' };
-      const series = ['achats', 'depenses', 'ventes', 'dettes'];
-
+      const maxY = Math.max(...monthlyData.flatMap(d=>[d.achats,d.ventes,d.depenses,d.dettes]),1);
+      const xScale = (i)=>(i/(months.length-1))*width;
+      const yScale = v => height - (v/maxY)*height;
+      const colors = { achats:'#1a75ff', depenses:'#ef4444', ventes:'#ffd443', dettes:'#8b5cf6' };
+      const series = ['achats','depenses','ventes','dettes'];
       series.forEach((label, seriesIndex) => {
-        monthlyData.forEach((d, i) => {
-          const barWidth = (width / months.length) / series.length - 2;
-          const offset = seriesIndex * (barWidth + 2) - ((series.length - 1) * (barWidth + 2)) / 2;
-          const x = xScale(i) + offset + (width / months.length) / 2;
+        monthlyData.forEach((d,i) => {
+          const barWidth = (width/months.length)/series.length - 2;
+          const offset = seriesIndex*(barWidth+2) - ((series.length-1)*(barWidth+2))/2;
+          const x = xScale(i) + offset + (width/months.length)/2;
           const val = d[label];
           const y = yScale(val);
           const barHeight = height - y;
-          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-          rect.setAttribute('x', x);
-          rect.setAttribute('y', y);
-          rect.setAttribute('width', barWidth);
-          rect.setAttribute('height', barHeight);
-          rect.setAttribute('fill', colors[label]);
-          rect.setAttribute('class', 'bar');
+          const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+          rect.setAttribute('x', x); rect.setAttribute('y', y); rect.setAttribute('width', Math.max(1,barWidth)); rect.setAttribute('height', Math.max(0,barHeight)); rect.setAttribute('fill', colors[label]);
           g.appendChild(rect);
         });
       });
-
-      months.forEach((m, i) => {
-        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', xScale(i));
-        text.setAttribute('y', height + 30);
-        text.setAttribute('class', 'chart-label');
-        text.setAttribute('text-anchor', 'middle');
-        text.textContent = m;
-        g.appendChild(text);
+      months.forEach((m,i) => {
+        const text = document.createElementNS('http://www.w3.org/2000/svg','text'); text.setAttribute('x', xScale(i)); text.setAttribute('y', height + 30); text.setAttribute('class','chart-label'); text.setAttribute('text-anchor','middle'); text.textContent = m; g.appendChild(text);
       });
-
-      const yTicks = [0, Math.round(maxY / 2), Math.round(maxY)];
+      const yTicks = [0, Math.round(maxY/2), Math.round(maxY)];
       yTicks.forEach(v => {
-        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', -10);
-        text.setAttribute('y', yScale(v) + 5);
-        text.setAttribute('class', 'chart-label');
-        text.setAttribute('text-anchor', 'end');
-        text.textContent = money(v);
-        g.appendChild(text);
+        const text = document.createElementNS('http://www.w3.org/2000/svg','text'); text.setAttribute('x', -10); text.setAttribute('y', yScale(v)+5); text.setAttribute('class','chart-label'); text.setAttribute('text-anchor','end'); text.textContent = money(v); g.appendChild(text);
       });
     }
 
-    function renderAll() {
-      renderKPIs();
-      renderChart();
+    function renderAll(){
+      renderKPIs(); renderChart();
       if (activeSection === 'achats') renderTableAchats();
       else if (activeSection === 'ventes') renderTableVentes();
       else if (activeSection === 'depenses') renderTableDepenses();
       else if (activeSection === 'dettes') renderTableDettes();
       else if (activeSection === 'depots') renderTableDepots();
+      else if (activeSection === 'comptes') renderAccountsAndTables();
+      // ensure accounts table always rendered for totals update
+      renderAccountsTable();
+    }
+    function renderAccountsAndTables(){ renderAccountsTable(); renderTableAchats(); renderTableVentes(); renderTableDepenses(); renderTableDettes(); renderTableDepots(); }
+
+    /* --------------------
+       Sidebar helpers
+       -------------------- */
+    function openSidebar(){ el('#sidebar').classList.remove('-left-[320px]'); el('#sidebar').classList.add('left-0','shadow-2xl'); }
+    function closeSidebar(){ el('#sidebar').classList.add('-left-[320px]'); el('#sidebar').classList.remove('left-0','shadow-2xl'); }
+
+    /* --------------------
+       Save entry (create/edit)
+       - compute amountFCFA & rateUsed and persist them
+       -------------------- */
+    function nextId(){ const max = records.reduce((m,r)=>Math.max(m,Number(r.id)||0),0); return (max || Date.now()) + Math.floor(Math.random()*1000); }
+
+    function saveEntry(e){
+      e.preventDefault();
+      const idVal = el('#f_id').value;
+      const itemType = el('#f_item_type').value;
+      const item = itemType === 'Dollar' ? 'Dollar' : (el('#f_item_custom').value.trim() || 'Autre');
+      const data = {
+        record_type: formContext,
+        date: el('#f_date').value,
+        item,
+        qty: Number(el('#f_qty').value),
+        price: Number(el('#f_price').value),
+        txCurrency: el('#f_txcurrency').value || 'FCFA',
+        party: el('#f_party').value.trim(),
+        note: el('#f_note').value.trim(),
+        accountDebitId: el('#f_debit_account').value ? Number(el('#f_debit_account').value) : null,
+        accountCreditId: el('#f_credit_account').value ? Number(el('#f_credit_account').value) : null
+      };
+
+      if (!data.date || !data.item || !data.party || data.qty < 0 || Number.isNaN(data.qty) || Number.isNaN(data.price) || (!data.accountDebitId && !data.accountCreditId)){
+        el('#formError').classList.remove('hidden');
+        return;
+      }
+
+      const total = Number(data.qty) * Number(data.price);
+      const prefRate = getPreferredRate(data.txCurrency, data.date);
+      const rateUsed = prefRate;
+      const amountFCFA = computeAmountFCFA(data.txCurrency, total, rateUsed);
+
+      if (idVal){
+        const idx = records.findIndex(r => Number(r.id) === Number(idVal));
+        if (idx !== -1){
+          // reverse previous effect
+          reverseRecordEffect(records[idx]);
+          records[idx] = { ...records[idx], ...data, id: Number(idVal), amountFCFA, rateUsed };
+          saveToLocal();
+          applyRecordEffect(records[idx]);
+        } else {
+          const id = Number(idVal);
+          records.push({ id, ...data, amountFCFA, rateUsed });
+          saveToLocal();
+          applyRecordEffect({ id, ...data, amountFCFA, rateUsed });
+        }
+      } else {
+        const id = nextId();
+        const rec = { id, ...data, amountFCFA, rateUsed };
+        records.push(rec);
+        saveToLocal();
+        applyRecordEffect(rec);
+      }
+
+      renderAll();
+      closeModal();
     }
 
-    // Sidebar open/close helpers
-    function openSidebar() {
-      el('#sidebar').classList.remove('-left-[320px]');
-      el('#sidebar').classList.add('left-0', 'shadow-2xl');
-    }
-    function closeSidebar() {
-      el('#sidebar').classList.add('-left-[320px]');
-      el('#sidebar').classList.remove('left-0', 'shadow-2xl');
+    /* --------------------
+       Delete entries
+       -------------------- */
+    function openConfirmModal(ids, type, isBulk=false){
+      el('#confirmText').textContent = isBulk ? `Voulez-vous vraiment supprimer ${ids.length} éléments ? Cette action est irréversible et impactera vos comptes.` : 'Voulez-vous vraiment supprimer cet élément ? Cette action est irréversible et impactera vos comptes.';
+      document.querySelectorAll('.modal-backdrop').forEach(m => m.style.display = 'none');
+      el('#confirmOverlay').style.display = 'block';
+      el('#confirmOk').onclick = () => deleteEntries(ids, type);
+      document.body.style.overflow = 'hidden';
     }
 
-    // Event wiring (safe)
-    safeOn('#openSidebar', 'click', openSidebar);
-    safeOn('#closeModal', 'click', closeModal);
-    safeOn('#cancelForm', 'click', closeModal);
-    safeOn('#entryForm', 'submit', saveEntry);
-    safeOn('#confirmCancel', 'click', () => el('#confirmOverlay').classList.add('hidden'));
+    function deleteEntries(ids, type){
+      const toDelete = new Set(ids.map(Number));
+      records.filter(r => toDelete.has(Number(r.id))).forEach(r => reverseRecordEffect(r));
+      records = records.filter(r => !toDelete.has(Number(r.id)));
+      saveToLocal();
+      renderAll();
+      el('#confirmOverlay').style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    /* --------------------
+       Sorting / helpers (simple)
+       -------------------- */
+    function sortTable(type, field, dir){
+      const filteredRecords = records.filter(r => r.record_type === type);
+      filteredRecords.sort((a,b)=>{
+        let va = a[field], vb = b[field];
+        if (field === 'total'){ va = a.amountFCFA || 0; vb = b.amountFCFA || 0; }
+        if (typeof va === 'string') return dir * String(va).localeCompare(String(vb));
+        return dir * (Number(va||0) - Number(vb||0));
+      });
+      records = records.filter(r => r.record_type !== type).concat(filteredRecords);
+      saveToLocal();
+      renderTable(type);
+    }
+
+    function renderTable(type){
+      if (type === 'achat') return renderTableAchats();
+      if (type === 'vente') return renderTableVentes();
+      if (type === 'depense') return renderTableDepenses();
+      if (type === 'dette') return renderTableDettes();
+      if (type === 'depot') return renderTableDepots();
+    }
+
+    /* --------------------
+       Wiring UI events
+       -------------------- */
+    document.addEventListener('click', (e)=>{
+      const editBtn = e.target.closest('.editOne');
+      const delBtn = e.target.closest('.deleteOne');
+      const editCompteBtn = e.target.closest('.editCompte');
+      const resetCompteBtn = e.target.closest('.resetCompte');
+      const deleteCompteBtn = e.target.closest('.deleteCompte');
+
+      if (editBtn){
+        const id = Number(editBtn.dataset.id);
+        const type = editBtn.dataset.type;
+        openModal(type, id); return;
+      }
+      if (delBtn){
+        const id = Number(delBtn.dataset.id);
+        const type = delBtn.dataset.type;
+        openConfirmModal([id], type); return;
+      }
+      if (editCompteBtn){
+        const id = Number(editCompteBtn.dataset.id);
+        openCompteModal(id); return;
+      }
+      if (resetCompteBtn){
+        const id = Number(resetCompteBtn.dataset.id);
+        resetAccount(id); return;
+      }
+      if (deleteCompteBtn){
+        const id = Number(deleteCompteBtn.dataset.id);
+        openDeleteCompteModal(id); return;
+      }
+      // Force rebuild button
+      if (e.target && e.target.id === 'forceRebuildBtn'){
+        forceReconstruction();
+      }
+    });
+
+    // Basic element events
+    el('#openSidebar').addEventListener('click', openSidebar);
+    el('#closeModal').addEventListener('click', closeModal);
+    el('#cancelForm').addEventListener('click', closeModal);
+    el('#entryForm').addEventListener('submit', saveEntry);
+    el('#confirmCancel').addEventListener('click', ()=>{ el('#confirmOverlay').style.display = 'none'; document.body.style.overflow = ''; });
 
     els('.nav-link').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1062,137 +1531,154 @@
       });
     });
 
-    safeOn('#quickAddAchat', 'click', () => openModal('achat'));
-    safeOn('#quickAddVente', 'click', () => openModal('vente'));
-    safeOn('#quickAddDepense', 'click', () => openModal('depense'));
-    safeOn('#quickAddDette', 'click', () => openModal('dette'));
-    safeOn('#quickAddDepot', 'click', () => openModal('depot'));
+    el('#quickAddAchat').addEventListener('click', ()=> { setFormContext('achat'); openModal('achat'); });
+    el('#quickAddVente').addEventListener('click', ()=> { setFormContext('vente'); openModal('vente'); });
+    el('#quickAddDepense').addEventListener('click', ()=> { setFormContext('depense'); openModal('depense'); });
+    el('#quickAddDette').addEventListener('click', ()=> { setFormContext('dette'); openModal('dette'); });
+    el('#quickAddDepot').addEventListener('click', ()=> { setFormContext('depot'); openModal('depot'); });
 
-    safeOn('#addAchat', 'click', () => openModal('achat'));
-    safeOn('#addVente', 'click', () => openModal('vente'));
-    safeOn('#addDepense', 'click', () => openModal('depense'));
-    safeOn('#addDette', 'click', () => openModal('dette'));
-    safeOn('#addDepot', 'click', () => openModal('depot'));
+    el('#addAchat')?.addEventListener('click', ()=> { setFormContext('achat'); openModal('achat'); });
+    el('#addVente')?.addEventListener('click', ()=> { setFormContext('vente'); openModal('vente'); });
+    el('#addDepense')?.addEventListener('click', ()=> { setFormContext('depense'); openModal('depense'); });
+    el('#addDette')?.addEventListener('click', ()=> { setFormContext('dette'); openModal('dette'); });
+    el('#addDepot')?.addEventListener('click', ()=> { setFormContext('depot'); openModal('depot'); });
 
-    safeOn('#exportAchats', 'click', () => exportPDF('achat'));
-    safeOn('#exportVentes', 'click', () => exportPDF('vente'));
-    safeOn('#exportDepenses', 'click', () => exportPDF('depense'));
-    safeOn('#exportDettes', 'click', () => exportPDF('dette'));
-    safeOn('#exportDepots', 'click', () => exportPDF('depot'));
+    el('#exportAchats')?.addEventListener('click', ()=> exportPDF('achat'));
+    el('#exportVentes')?.addEventListener('click', ()=> exportPDF('vente'));
+    el('#exportDepenses')?.addEventListener('click', ()=> exportPDF('depense'));
+    el('#exportDettes')?.addEventListener('click', ()=> exportPDF('dette'));
+    el('#exportDepots')?.addEventListener('click', ()=> exportPDF('depot'));
+    el('#exportComptes')?.addEventListener('click', ()=> exportComptesPDF());
 
-    el('#searchAchats')?.addEventListener('input', debounce(() => renderTableAchats(), 300));
-    el('#searchVentes')?.addEventListener('input', debounce(() => renderTableVentes(), 300));
-    el('#searchDepenses')?.addEventListener('input', debounce(() => renderTableDepenses(), 300));
-    el('#searchDettes')?.addEventListener('input', debounce(() => renderTableDettes(), 300));
-    el('#searchDepots')?.addEventListener('input', debounce(() => renderTableDepots(), 300));
+    el('#searchAchats')?.addEventListener('input', debounce(()=> renderTableAchats(), 300));
+    el('#searchVentes')?.addEventListener('input', debounce(()=> renderTableVentes(), 300));
+    el('#searchDepenses')?.addEventListener('input', debounce(()=> renderTableDepenses(), 300));
+    el('#searchDettes')?.addEventListener('input', debounce(()=> renderTableDettes(), 300));
+    el('#searchDepots')?.addEventListener('input', debounce(()=> renderTableDepots(), 300));
 
-    // select all handlers
-    if (el('#selectAllAchats')) el('#selectAllAchats').addEventListener('change', (e) => { els('#achatBody .rowCheck').forEach(c => c.checked = e.target.checked); updateBulkButtonsStateForTable('achat'); });
-    if (el('#selectAllVentes')) el('#selectAllVentes').addEventListener('change', (e) => { els('#venteBody .rowCheck').forEach(c => c.checked = e.target.checked); updateBulkButtonsStateForTable('vente'); });
-    if (el('#selectAllDepenses')) el('#selectAllDepenses').addEventListener('change', (e) => { els('#depenseBody .rowCheck').forEach(c => c.checked = e.target.checked); updateBulkButtonsStateForTable('depense'); });
-    if (el('#selectAllDettes')) el('#selectAllDettes').addEventListener('change', (e) => { els('#detteBody .rowCheck').forEach(c => c.checked = e.target.checked); updateBulkButtonsStateForTable('dette'); });
-    if (el('#selectAllDepots')) el('#selectAllDepots').addEventListener('change', (e) => { els('#depotBody .rowCheck').forEach(c => c.checked = e.target.checked); updateBulkButtonsStateForTable('depot'); });
+    if (el('#selectAllAchats')) el('#selectAllAchats').addEventListener('change', (e)=>{ els('#achatBody .rowCheck').forEach(c=>c.checked=e.target.checked); updateBulkButtonsStateForTable('achat'); });
+    if (el('#selectAllVentes')) el('#selectAllVentes').addEventListener('change', (e)=>{ els('#venteBody .rowCheck').forEach(c=>c.checked=e.target.checked); updateBulkButtonsStateForTable('vente'); });
+    if (el('#selectAllDepenses')) el('#selectAllDepenses').addEventListener('change', (e)=>{ els('#depenseBody .rowCheck').forEach(c=>c.checked=e.target.checked); updateBulkButtonsStateForTable('depense'); });
+    if (el('#selectAllDettes')) el('#selectAllDettes').addEventListener('change', (e)=>{ els('#detteBody .rowCheck').forEach(c=>c.checked=e.target.checked); updateBulkButtonsStateForTable('dette'); });
+    if (el('#selectAllDepots')) el('#selectAllDepots').addEventListener('change', (e)=>{ els('#depotBody .rowCheck').forEach(c=>c.checked=e.target.checked); updateBulkButtonsStateForTable('depot'); });
 
-    if (el('#deleteSelectedAchats')) el('#deleteSelectedAchats').addEventListener('click', () => {
-      const ids = els('#achatBody .rowCheck').filter(c => c.checked).map(c => Number(c.dataset.id));
-      if (ids.length) openConfirmModal(ids, 'achat', true);
-    });
-    if (el('#deleteSelectedVentes')) el('#deleteSelectedVentes').addEventListener('click', () => {
-      const ids = els('#venteBody .rowCheck').filter(c => c.checked).map(c => Number(c.dataset.id));
-      if (ids.length) openConfirmModal(ids, 'vente', true);
-    });
-    if (el('#deleteSelectedDepenses')) el('#deleteSelectedDepenses').addEventListener('click', () => {
-      const ids = els('#depenseBody .rowCheck').filter(c => c.checked).map(c => Number(c.dataset.id));
-      if (ids.length) openConfirmModal(ids, 'depense', true);
-    });
-    if (el('#deleteSelectedDettes')) el('#deleteSelectedDettes').addEventListener('click', () => {
-      const ids = els('#detteBody .rowCheck').filter(c => c.checked).map(c => Number(c.dataset.id));
-      if (ids.length) openConfirmModal(ids, 'dette', true);
-    });
-    if (el('#deleteSelectedDepots')) el('#deleteSelectedDepots').addEventListener('click', () => {
-      const ids = els('#depotBody .rowCheck').filter(c => c.checked).map(c => Number(c.dataset.id));
-      if (ids.length) openConfirmModal(ids, 'depot', true);
-    });
+    if (el('#deleteSelectedAchats')) el('#deleteSelectedAchats').addEventListener('click', ()=> { const ids = els('#achatBody .rowCheck').filter(c=>c.checked).map(c=>Number(c.dataset.id)); if (ids.length) openConfirmModal(ids,'achat',true); });
+    if (el('#deleteSelectedVentes')) el('#deleteSelectedVentes').addEventListener('click', ()=> { const ids = els('#venteBody .rowCheck').filter(c=>c.checked).map(c=>Number(c.dataset.id)); if (ids.length) openConfirmModal(ids,'vente',true); });
+    if (el('#deleteSelectedDepenses')) el('#deleteSelectedDepenses').addEventListener('click', ()=> { const ids = els('#depenseBody .rowCheck').filter(c=>c.checked).map(c=>Number(c.dataset.id)); if (ids.length) openConfirmModal(ids,'depense',true); });
+    if (el('#deleteSelectedDettes')) el('#deleteSelectedDettes').addEventListener('click', ()=> { const ids = els('#detteBody .rowCheck').filter(c=>c.checked).map(c=>Number(c.dataset.id)); if (ids.length) openConfirmModal(ids,'dette',true); });
+    if (el('#deleteSelectedDepots')) el('#deleteSelectedDepots').addEventListener('click', ()=> { const ids = els('#depotBody .rowCheck').filter(c=>c.checked).map(c=>Number(c.dataset.id)); if (ids.length) openConfirmModal(ids,'depot',true); });
 
-    document.addEventListener('click', (e) => {
-      const editBtn = e.target.closest('.editOne');
-      const delBtn = e.target.closest('.deleteOne');
-
-      if (editBtn) {
-        const id = Number(editBtn.dataset.id);
-        const type = editBtn.dataset.type;
-        openModal(type, id);
-        return;
-      }
-      if (delBtn) {
-        const id = Number(delBtn.dataset.id);
-        const type = delBtn.dataset.type;
-        openConfirmModal([id], type);
-        return;
-      }
-
-      const th = e.target.closest('th[data-sort]');
-      if (th) {
-        const field = th.dataset.sort;
-        const span = th.querySelector('span');
-        const dir = span && span.textContent === '▼' ? -1 : 1;
-        sortTable(formContext, field, dir);
-        if (span) span.textContent = dir === 1 ? '▲' : '▼';
-      }
-    });
-
-    document.addEventListener('change', (e) => {
-      if (e.target && e.target.matches('.rowCheck')) {
-        const tbody = e.target.closest('tbody');
-        if (!tbody) return;
-        const id = tbody.id;
-        const type = id === 'achatBody' ? 'achat' : id === 'venteBody' ? 'vente' : id === 'depenseBody' ? 'depense' : id === 'detteBody' ? 'dette' : 'depot';
-        updateBulkButtonsStateForTable(type);
-      }
-    });
-
-    function sortTable(type, field, dir) {
-      const filteredRecords = records.filter(r => r.record_type === type);
-      filteredRecords.sort((a, b) => {
-        let va = a[field], vb = b[field];
-        if (field === 'total') { va = subtotal(a); vb = subtotal(b); }
-        if (typeof va === 'string') return dir * String(va).localeCompare(String(vb));
-        return dir * (Number(va || 0) - Number(vb || 0));
-      });
-      records = records.filter(r => r.record_type !== type).concat(filteredRecords);
-      saveToLocal();
-      renderTable(type);
+    // form context setter
+    function setFormContext(ctx){
+      formContext = ctx;
+      el('#f_item_type').value = (ctx==='achat' || ctx==='vente') ? 'Dollar' : 'Autre';
+      el('#f_item_custom').classList.toggle('hidden', el('#f_item_type').value === 'Dollar');
+      if (ctx === 'achat' || ctx === 'vente') el('#f_txcurrency').value = 'USD'; else el('#f_txcurrency').value = 'FCFA';
     }
 
-    function setActiveSection(name) {
+    // account modal events
+    el('#addCompte')?.addEventListener('click', ()=> openCompteModal());
+    el('#closeCompteModal')?.addEventListener('click', closeCompteModal);
+    el('#compteCancel')?.addEventListener('click', closeCompteModal);
+    el('#compteForm')?.addEventListener('submit', saveCompte);
+    el('#resetAllComptes')?.addEventListener('click', resetAllAccounts);
+    el('#deleteCompteCancel')?.addEventListener('click', closeDeleteCompteModal);
+    el('#deleteCompteConfirm')?.addEventListener('click', confirmDeleteCompte);
+
+    // item type change (Dollar / Autre)
+    el('#f_item_type')?.addEventListener('change', ()=> {
+      const val = el('#f_item_type').value;
+      if (val === 'Dollar'){ el('#f_item_custom').classList.add('hidden'); el('#f_item_custom').value=''; el('#f_txcurrency').value='USD'; el('#f_price_label').textContent='Prix Unitaire (USD)'; }
+      else { el('#f_item_custom').classList.remove('hidden'); el('#f_txcurrency').value='FCFA'; el('#f_price_label').textContent='Prix Unitaire (FCFA)'; }
+    });
+
+    el('#f_txcurrency')?.addEventListener('change', ()=> {
+      const cur = el('#f_txcurrency').value || 'FCFA';
+      el('#f_price_label').textContent = `Prix Unitaire (${cur})`;
+    });
+
+    // --------------------
+    // Initialize app
+    // --------------------
+    loadFromLocal();
+    // ensure default accounts if none
+    function ensureDefaultAccounts(){
+      if (accounts.length === 0){
+        const defaults = [
+          { label:'Caisse (FCFA)', currency:'FCFA', rate:1, balanceFCFA:0 },
+          { label:'Flooz', currency:'FCFA', rate:1, balanceFCFA:0 },
+          { label:'Tmoney', currency:'FCFA', rate:1, balanceFCFA:0 },
+          { label:'Dollar Cash', currency:'USD', rate:DEFAULT_RATE_USD, balanceFCFA:0 },
+          { label:'Dollar DG', currency:'USD', rate:DEFAULT_RATE_USD, balanceFCFA:0 },
+          { label:'Dette', currency:'FCFA', rate:1, balanceFCFA:0 }
+        ];
+        defaults.forEach(d => accounts.push({ id: nextAccountId(), label: d.label, currency: d.currency, rate: d.rate, balanceFCFA: d.balanceFCFA }));
+        saveAccountsToLocal();
+      }
+    }
+    ensureDefaultAccounts();
+
+    // Ensure every record has amountFCFA + rateUsed saved
+    let recordsChanged = false;
+    records = records.map(r => {
+      const rec = {...r};
+      if (!rec.rateUsed) { rec.rateUsed = getPreferredRate(rec.txCurrency || 'FCFA', rec.date); recordsChanged = true; }
+      if (!rec.amountFCFA) { rec.amountFCFA = computeAmountFCFA(rec.txCurrency || 'FCFA', Number(rec.qty||0) * Number(rec.price||0), rec.rateUsed); recordsChanged = true; }
+      return rec;
+    });
+    if (recordsChanged) saveToLocal();
+
+    // Do not auto-rebuild accounts (we preserve stored balances), but allow user to force rebuild.
+    renderAccountsTable();
+    renderAll();
+    setActiveSection('dashboard');
+
+    // expose some functions for debugging
+    window._nbbc = { records, accounts, saveToLocal, saveAccountsToLocal, rebuildAccountBalancesFromRecords, applyRecordEffect, reverseRecordEffect, computeAmountFCFA, getPreferredRate };
+
+    /* --------------------
+       Force reconstruction (button)
+       - creates backup keys, then rebuilds balances from records only
+       -------------------- */
+    function forceReconstruction(){
+      if (!confirm('Forcer la reconstruction des soldes à partir des enregistrements ? Une sauvegarde locale sera créée avant l\'opération.')) return;
+      // backups
+      const ts = new Date().toISOString().replace(/[:.]/g,'-');
+      try {
+        localStorage.setItem(STORAGE_KEY + '_backup_' + ts, JSON.stringify(records));
+        localStorage.setItem(STORAGE_ACCOUNTS + '_backup_' + ts, JSON.stringify(accounts));
+      } catch(e){ console.warn('backup failed', e); }
+      // rebuild
+      rebuildAccountBalancesFromRecords();
+      renderAll();
+      alert('Reconstruction terminée (backup créé).');
+    }
+
+    /* --------------------
+       Helper: setActiveSection
+       -------------------- */
+    function setActiveSection(name){
       activeSection = name;
       els('.section').forEach(s => s.classList.add('hidden'));
       const target = el(`#${name}Section`);
       if (target) target.classList.remove('hidden');
       el('#pageTitle').textContent = ({
-        dashboard: 'Dashboard Central',
-        achats: 'Gestion Achats',
-        ventes: 'Gestion Ventes',
-        depenses: 'Gestion Dépenses',
-        dettes: 'Gestion Dettes',
-        depots: 'Gestion dépôt/retrait (flooz/mux)'
+        dashboard:'Dashboard Central',
+        achats:'Gestion Achats',
+        ventes:'Gestion Ventes',
+        depenses:'Gestion Dépenses',
+        dettes:'Gestion Dettes',
+        depots:'Gestion dépôt/retrait (flooz/mux)',
+        comptes:'Gestion de compte'
       })[name] || 'Dashboard Central';
 
-      els('.nav-link').forEach(b => b.classList.remove('nav-active', 'active'));
+      els('.nav-link').forEach(b=> b.classList.remove('nav-active','active'));
       const activeBtn = document.querySelector(`.nav-link[data-target="${name}"]`);
-      if (activeBtn) activeBtn.classList.add('nav-active', 'active');
+      if (activeBtn) activeBtn.classList.add('nav-active','active');
 
       renderAll();
       closeSidebar();
     }
-
-    // Init
-    loadFromLocal();
-    renderAll();
-    setActiveSection('dashboard');
-
-    // Expose for debugging
-    window._nbbc = { saveToLocal, loadFromLocal, records };
 
   </script>
 </body>
